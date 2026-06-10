@@ -101,17 +101,28 @@ export async function fetchDocumentText(url, mime) {
   return buf.toString('utf8').slice(0, 8000)
 }
 
+const PIN_UA = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
+
 const PLATFORMS = {
   pinterest: {
     test: (url) => /pinterest\.(com|fr|de|es|it|jp|pt|ru|co\.uk|ca|com\.au)\/pin\//i.test(url) || /pin\.it\//i.test(url),
     download: async (url) => {
-      const res = await fetch(url, { signal: AbortSignal.timeout(10000), headers: { 'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36' } })
+      const res = await fetch(url, { signal: AbortSignal.timeout(10000), headers: { 'User-Agent': PIN_UA } })
       const html = await res.text()
-      const m = html.match(/https?:\/\/i\.pinimg\.com\/originals\/[a-f0-9]+\/[a-f0-9]+\/[a-f0-9]+\/[a-f0-9]+\.(?:jpg|jpeg|png|webp)/i)
-      if (!m) throw new Error('Pinterest rasmi topilmadi')
-      const imgRes = await fetch(m[0], { signal: AbortSignal.timeout(15000) })
+
+      const videoMatch = html.match(/"url"\s*:\s*"(https:\/\/v1\.pinimg\.com\/videos\/iht\/expMp4\/[^"]+\.mp4)"/)
+      if (videoMatch) {
+        const vres = await fetch(videoMatch[1], { signal: AbortSignal.timeout(30000) })
+        const buf = Buffer.from(await vres.arrayBuffer())
+        return { buffer: buf, ext: 'mp4', mime: 'video/mp4', filename: `pin_${Date.now()}.mp4`, type: 'video' }
+      }
+
+      const imgMatch = html.match(/https?:\/\/i\.pinimg\.com\/originals\/[a-f0-9]+\/[a-f0-9]+\/[a-f0-9]+\/[a-f0-9]+\.(?:jpg|jpeg|png|webp)/i)
+      if (!imgMatch) throw new Error('Pinterest media topilmadi')
+      const imgRes = await fetch(imgMatch[0], { signal: AbortSignal.timeout(15000) })
       const buf = Buffer.from(await imgRes.arrayBuffer())
-      return { buffer: buf, ext: m[0].split('.').pop(), filename: `pin_${Date.now()}.${m[0].split('.').pop()}` }
+      const ext = imgMatch[0].split('.').pop()
+      return { buffer: buf, ext, mime: `image/${ext === 'jpg' ? 'jpeg' : ext}`, filename: `pin_${Date.now()}.${ext}`, type: 'image' }
     }
   }
 }

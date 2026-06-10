@@ -452,11 +452,12 @@ export function createBot(token, goApiKey, opencodePassword) {
         if (platform) {
           try {
             const file = await downloadFromPlatform(url, platform)
-            const caption = platform === 'pinterest' ? '📌 Pinterest' : ''
-            if (['jpg','jpeg','png','webp'].includes(file.ext)) {
-              await ctx.replyWithPhoto({ source: file.buffer }, { caption })
+            if (file.type === 'video') {
+              await ctx.replyWithVideo({ source: file.buffer }, { caption: '📌 Pinterest' })
+            } else if (['jpg','jpeg','png','webp'].includes(file.ext)) {
+              await ctx.replyWithPhoto({ source: file.buffer }, { caption: '📌 Pinterest' })
             } else {
-              await ctx.replyWithDocument({ source: file.buffer, filename: file.filename }, { caption })
+              await ctx.replyWithDocument({ source: file.buffer, filename: file.filename }, { caption: '📌 Pinterest' })
             }
           } catch (e) {
             await ctx.reply(`❌ Yuklab bo'lmadi: ${e.message}`)
