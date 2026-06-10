@@ -58,7 +58,7 @@ export function createGoClient(apiKey) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
         },
-        signal: AbortSignal.timeout(60000),
+        signal: AbortSignal.timeout(120000),
       })
       if (!res.ok) {
         const text = await res.text().catch(() => '')
