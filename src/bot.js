@@ -14,8 +14,7 @@ const mainKb = Markup.keyboard([
 
 const genKb = Markup.inlineKeyboard([
   Markup.button.callback('🟢 Pollinations (cheksiz)', 'gen_pollinations'),
-  Markup.button.callback('🔵 Hugging Face FLUX', 'gen_huggingface'),
-  Markup.button.callback('🟡 Stability AI (25/kun)', 'gen_stability'),
+  Markup.button.callback('🔵 Hugging Face FLUX (yuqori)', 'gen_huggingface'),
 ])
 
 function auth(ctx, next) {
@@ -42,7 +41,7 @@ function imageContent(text, imageUrl) {
   ]
 }
 
-export function createBot(token, opencodePassword, goApiKey, hfKey, stabilityKey) {
+export function createBot(token, opencodePassword, goApiKey, hfKey) {
   const bot = new Telegraf(token)
   bot.use(auth)
 
@@ -131,16 +130,10 @@ export function createBot(token, opencodePassword, goApiKey, hfKey, stabilityKey
     const statusMsg = await ctx.reply(`🎨 ${prompt}\n⏳ Yaratilmoqda...`)
     try {
       let buf
-      switch (service) {
-        case 'pollinations':
-          buf = await genClient.pollinations(prompt)
-          break
-        case 'huggingface':
-          buf = await genClient.huggingFace(prompt, hfKey)
-          break
-        case 'stability':
-          buf = await genClient.stability(prompt, stabilityKey)
-          break
+      if (service === 'pollinations') {
+        buf = await genClient.pollinations(prompt)
+      } else {
+        buf = await genClient.huggingFace(prompt, hfKey)
       }
       await ctx.deleteMessage(statusMsg.message_id)
       await ctx.replyWithPhoto({ source: buf }, { caption: `🎨 ${service}: ${prompt}` })
@@ -200,11 +193,6 @@ export function createBot(token, opencodePassword, goApiKey, hfKey, stabilityKey
     await ctx.editMessageText('🔵 Hugging Face FLUX (limitli, yuqori)\n\nPrompt yozing...')
   })
 
-  bot.action('gen_stability', async (ctx) => {
-    store.genService = 'stability'
-    store.taskMode = 'gen'
-    await ctx.editMessageText('🟡 Stability AI (25/kun, yaxshi)\n\nPrompt yozing...')
-  })
 
   bot.hears('🎯 Vibe', async (ctx) => {
     store.taskMode = 'chat'

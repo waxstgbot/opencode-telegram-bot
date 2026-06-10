@@ -14,15 +14,12 @@ const goApiKey = process.env.OPENCODE_GO_KEY || GO_API_KEY_FALLBACK
 const HF_KEY_FALLBACK = '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'
 const hfKey = process.env.HF_KEY || HF_KEY_FALLBACK
 
-const STABILITY_KEY_FALLBACK = 'sk-p7bBipJdSVkqG2X8CrqXzuvutfInMetDuYc7HXA8RUFJFKgy'
-const stabilityKey = process.env.STABILITY_KEY || STABILITY_KEY_FALLBACK
-
 if (!botToken) {
   console.error('BOT_TOKEN env variable required')
   process.exit(1)
 }
 
-const bot = createBot(botToken, opencodePassword, goApiKey, hfKey, stabilityKey)
+const bot = createBot(botToken, opencodePassword, goApiKey, hfKey)
 
 const app = express()
 app.use(express.json())
