@@ -1,5 +1,5 @@
 import { Telegraf, Markup } from 'telegraf'
-import { createClient, createGoClient, fetchWeather, fetchWeatherByCoords, fetchUrlText, fetchDocumentText, webSearch } from './client.js'
+import { createClient, createGoClient, fetchWeather, fetchWeatherByCoords, fetchUrlText, fetchDocumentText, webSearch, detectPlatform, downloadFromPlatform } from './client.js'
 import { store } from './store.js'
 
 const ALLOWED_USERS_RAW = process.env.ALLOWED_USERS || '5461818003,1133984065'
@@ -149,7 +149,8 @@ export function createBot(token, goApiKey, opencodePassword) {
       '🤖 WILD AI\n\n'
       + `🧠 ${info.label} · ${store.mode === 'online' ? '💻 Komp rejimi' : '📱 Telefon AI rejimi'}\n\n`
       + 'Tugmalardan foydalaning:\n'
-      + '• URL yuboring → bot o\'qiydi\n'
+      + '• 📌 Pinterest linki → rasmni yuklab beradi\n'
+      + '• 🔗 URL yuboring → bot o\'qiydi\n'
       + '• Oddiy matn → AI + web qidiruv\n'
       + '• Ob-havo avtomatik: 08:00 / 13:00',
       mainKb
@@ -161,7 +162,8 @@ export function createBot(token, goApiKey, opencodePassword) {
     store.resetUserPrompt(ctx.from.id)
     store.clearUserHistory(ctx.from.id)
     await ctx.reply('🧠 *Chat* | Nemotron 3 Ultra\n\n'
-      + 'URL yuboring → o\'qib beradi\n'
+      + '📌 Pinterest linki → rasm yuklab beradi\n'
+      + '🔗 URL yuboring → o\'qib beradi\n'
       + 'Matn yozing → AI + web qidiruv',
       { ...mainKb, parse_mode: 'Markdown' }
     )
@@ -269,6 +271,7 @@ export function createBot(token, goApiKey, opencodePassword) {
       + '📊 *Status* — bot holati\n'
       + '🗑 *Clear* — tarixni tozalash\n'
       + '🌤 Avtomatik ob-havo: 08:00 / 13:00\n\n'
+      + '📌 Pinterest linki → rasmni yuklab beradi\n'
       + '🔗 URL yuboring → bot o\'qib beradi\n'
       + '🌐 Har bir xabar web qidiruv bilan boyitiladi\n'
       + '💻 /onl = Komp rejimi  |  📱 /ofl = Telefon AI rejimi',
@@ -440,6 +443,27 @@ export function createBot(token, goApiKey, opencodePassword) {
         await ctx.reply('❌ Ob-havo olinmadi. Shahar nomini to\'g\'ri yozing yoki location yuboring.', mainKb)
       }
       return
+    }
+
+    const urls = text.match(URL_REGEX)
+    if (urls) {
+      for (const url of urls) {
+        const platform = detectPlatform(url)
+        if (platform) {
+          try {
+            const file = await downloadFromPlatform(url, platform)
+            const caption = platform === 'pinterest' ? '📌 Pinterest' : ''
+            if (['jpg','jpeg','png','webp'].includes(file.ext)) {
+              await ctx.replyWithPhoto({ source: file.buffer }, { caption })
+            } else {
+              await ctx.replyWithDocument({ source: file.buffer, filename: file.filename }, { caption })
+            }
+          } catch (e) {
+            await ctx.reply(`❌ Yuklab bo'lmadi: ${e.message}`)
+          }
+          return
+        }
+      }
     }
 
     await processChat(ctx, text)

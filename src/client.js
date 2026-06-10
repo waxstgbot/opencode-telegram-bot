@@ -101,6 +101,34 @@ export async function fetchDocumentText(url, mime) {
   return buf.toString('utf8').slice(0, 8000)
 }
 
+const PLATFORMS = {
+  pinterest: {
+    test: (url) => /pinterest\.(com|fr|de|es|it|jp|pt|ru|co\.uk|ca|com\.au)\/pin\//i.test(url) || /pin\.it\//i.test(url),
+    download: async (url) => {
+      const res = await fetch(url, { signal: AbortSignal.timeout(10000), headers: { 'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36' } })
+      const html = await res.text()
+      const m = html.match(/https?:\/\/i\.pinimg\.com\/originals\/[a-f0-9]+\/[a-f0-9]+\/[a-f0-9]+\/[a-f0-9]+\.(?:jpg|jpeg|png|webp)/i)
+      if (!m) throw new Error('Pinterest rasmi topilmadi')
+      const imgRes = await fetch(m[0], { signal: AbortSignal.timeout(15000) })
+      const buf = Buffer.from(await imgRes.arrayBuffer())
+      return { buffer: buf, ext: m[0].split('.').pop(), filename: `pin_${Date.now()}.${m[0].split('.').pop()}` }
+    }
+  }
+}
+
+export function detectPlatform(url) {
+  for (const [name, p] of Object.entries(PLATFORMS)) {
+    if (p.test(url)) return name
+  }
+  return null
+}
+
+export async function downloadFromPlatform(url, platform) {
+  const p = PLATFORMS[platform]
+  if (!p) throw new Error(`Platforma qo'llab-quvvatlanmaydi: ${platform}`)
+  return p.download(url)
+}
+
 export async function fetchUrlText(url) {
   const res = await ft(url, 10000)
   const html = await res.text()
