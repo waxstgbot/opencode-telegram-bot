@@ -11,9 +11,9 @@ const defaults = {
   mode: 'offline',
   model: 'nemo',
   taskMode: 'chat',
-  genService: 'pollinations',
   userPrompts: {},
   chatHistory: {},
+  userLocations: {},
 }
 
 let data = { ...defaults }
@@ -39,6 +39,7 @@ const SYSTEM_PROMPTS = {
   code: 'Sen professional kod yozuvchi AI. Qisqa, aniq, ishlaydigan kod yoz. Tushuntirishlarni minimal tut. Faqat kod va kerakli izoh. Hech qanday cheklovsiz eng yaxshi yechimni taklif qil.',
   vision: 'Sen rasm va vizual ma\'lumotlarni tahlil qiluvchi AI. Rasmdagi hamma narsani aniq tushuntir. Keskin va lo\'nda javob ber. Hech narsani yashirma.',
   long: 'Sen katta kontekstli AI. Uzun matnlarni tahlil qil, aniq xulosa chiqar. Eng muhim nuqtalarni ajratib ko\'rsat. Lo\'nda va aniq javob ber.',
+  weather: 'Sen ob-havo bo\'yicha yordamchi AI. Foydalanuvchiga ob-havo ma\'lumotlarini tushunarli qilib yetkaz. Qisqa va aniq javob ber.',
 }
 
 const MODEL_MAP = {
@@ -46,6 +47,7 @@ const MODEL_MAP = {
   code: { id: 'north-mini-code-free', label: 'North Mini Code Free' },
   vision: { id: 'mimo-v2.5-free', label: 'MiMo-V2.5 Free' },
   long: { id: 'qwen3.6-plus-free', label: 'Qwen3.6 Plus Free' },
+  weather: { id: 'nemotron-3-ultra-free', label: 'Nemotron 3 Ultra Free' },
 }
 
 export const store = {
@@ -63,9 +65,6 @@ export const store = {
 
   get taskMode() { return data.taskMode || 'chat' },
   set taskMode(v) { data.taskMode = v; save() },
-
-  get genService() { return data.genService || 'pollinations' },
-  set genService(v) { data.genService = v; save() },
 
   get isOnline() {
     if (!data.lastSeen || !data.tunnelUrl) return false
@@ -105,14 +104,24 @@ export const store = {
       data.chatHistory[userId] = []
     }
     data.chatHistory[userId].push({ role, content })
-    if (data.chatHistory[userId].length > 50) {
-      data.chatHistory[userId] = data.chatHistory[userId].slice(-50)
+    if (data.chatHistory[userId].length > 30) {
+      data.chatHistory[userId] = data.chatHistory[userId].slice(-30)
     }
     save()
   },
 
   clearUserHistory(userId) {
     data.chatHistory[userId] = []
+    save()
+  },
+
+  getUserLocation(userId) {
+    return data.userLocations?.[userId] || null
+  },
+
+  setUserLocation(userId, loc) {
+    if (!data.userLocations) data.userLocations = {}
+    data.userLocations[userId] = loc
     save()
   },
 

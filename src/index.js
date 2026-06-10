@@ -7,19 +7,15 @@ const PORT = process.env.PORT || 3000
 const botToken = process.env.BOT_TOKEN
 const allowedUsers = (process.env.ALLOWED_USERS || '').split(',').map(Number)
 const registerSecret = process.env.REGISTER_SECRET
-const opencodePassword = process.env.OPENCODE_SERVER_PASSWORD || ''
 const GO_API_KEY_FALLBACK = 'sk-9hRaZ8Qb2wGn7iTGuS0LHThjBSy6TMJFQWLZVsTElz7vX9mLDMJy8HbxAaZAe8k3'
 const goApiKey = process.env.OPENCODE_GO_KEY || GO_API_KEY_FALLBACK
-
-const HF_KEY_FALLBACK = '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'
-const hfKey = process.env.HF_KEY || HF_KEY_FALLBACK
 
 if (!botToken) {
   console.error('BOT_TOKEN env variable required')
   process.exit(1)
 }
 
-const bot = createBot(botToken, opencodePassword, goApiKey, hfKey)
+const bot = createBot(botToken, goApiKey)
 
 const app = express()
 app.use(express.json())
