@@ -48,7 +48,7 @@ export function createGoClient(apiKey) {
         model,
         messages,
         stream: false,
-        max_tokens: options.maxTokens || 800,
+        max_tokens: options.maxTokens || 500,
       }
       if (options.temperature !== undefined) body.temperature = options.temperature
 
@@ -59,7 +59,7 @@ export function createGoClient(apiKey) {
           'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify(body),
-        signal: AbortSignal.timeout(25000),
+        signal: AbortSignal.timeout(45000),
       })
       if (!res.ok) {
         const text = await res.text().catch(() => '')
