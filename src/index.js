@@ -1,10 +1,13 @@
 import 'dotenv/config'
 import express from 'express'
+import { execSync } from 'child_process'
 import { createBot } from './bot.js'
 import { store } from './store.js'
 import { fetchWeatherByCoords } from './client.js'
 
 const PORT = process.env.PORT || 3000
+let GIT_HASH = ''
+try { GIT_HASH = execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim() } catch {}
 const botToken = process.env.BOT_TOKEN
 const registerSecret = process.env.REGISTER_SECRET
 const opencodePassword = process.env.OPENCODE_SERVER_PASSWORD || ''
@@ -56,7 +59,7 @@ const app = express()
 app.use(express.json())
 
 app.get('/', (req, res) => {
-  res.json({ ok: true, online: store.isOnline, lastSeen: store.lastSeen, commit: 'ff1effb' })
+  res.json({ ok: true, online: store.isOnline, lastSeen: store.lastSeen, commit: GIT_HASH })
 })
 
 app.post('/register', (req, res) => {
