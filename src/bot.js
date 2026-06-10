@@ -128,10 +128,11 @@ export function createBot(token, goApiKey, opencodePassword) {
       + '║     🤖 WILD AI Bot   ║\n'
       + '╚══════════════════════╝\n\n'
       + `🧠 ${info.label}\n`
-      + `📡 ${store.mode === 'online' ? '✅ Online' : '💤 Offline'}\n\n`
+      + `📡 ${store.mode === 'online' ? '💻 Komp rejimi' : '📱 Telefon AI rejimi'}\n\n`
       + 'Tugmalardan foydalaning 👇\n'
       + 'URL yuboring → bot o\'qib beradi\n'
-      + 'Oddiy matn → AI + web qidiruv',
+      + 'Oddiy matn → AI + web qidiruv\n'
+      + 'Ob-havo avtomatik: 08:00 va 13:00',
       mainKb
     )
   })
@@ -241,9 +242,11 @@ export function createBot(token, goApiKey, opencodePassword) {
       + '⚡ *Agent* — Super AI Agent (istalgan soha bo\'yicha mutaxassis)\n'
       + '▶️ *Run* — kod bajarish (faqat Online)\n'
       + '📊 *Status* — bot holati\n'
-      + '🗑 *Clear* — tarixni tozalash\n\n'
+      + '🗑 *Clear* — tarixni tozalash\n'
+      + '🌤 Avtomatik ob-havo: 08:00 / 13:00\n\n'
       + '🔗 URL yuboring → bot o\'qib beradi\n'
-      + '🌐 Har bir xabar web qidiruv bilan boyitiladi',
+      + '🌐 Har bir xabar web qidiruv bilan boyitiladi\n'
+      + '💻 /onl = Komp rejimi  |  📱 /ofl = Telefon AI rejimi',
       { ...mainKb, parse_mode: 'Markdown' }
     )
   })
@@ -305,13 +308,13 @@ export function createBot(token, goApiKey, opencodePassword) {
     if (!store.isOnline) return ctx.reply('💤 Kompyuter offline', mainKb)
     store.mode = 'online'
     updateKb()
-    await ctx.reply('✅ *Online* rejim faollashtirildi\n\n▶️ Run — kod bajarish', { ...mainKb, parse_mode: 'Markdown' })
+    await ctx.reply('💻 *Komp rejimi* faollashtirildi\n\n▶️ Run — kod bajarish\n🔗 URL o\'qish\n💻 Shell komandalari', { ...mainKb, parse_mode: 'Markdown' })
   })
 
   bot.command('ofl', async (ctx) => {
     store.mode = 'offline'
     updateKb()
-    await ctx.reply('💤 Offline rejim', mainKb)
+    await ctx.reply('📱 *Telefon AI rejimi*\n\nAI modellari + web qidiruv + ob-havo', { ...mainKb, parse_mode: 'Markdown' })
   })
 
   bot.command('clear', async (ctx) => {

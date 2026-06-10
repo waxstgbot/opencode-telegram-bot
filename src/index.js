@@ -17,6 +17,41 @@ if (!botToken) {
 
 const bot = createBot(botToken, goApiKey, opencodePassword)
 
+const sentWeather = new Set()
+
+function startWeatherCron(botInstance) {
+  setInterval(async () => {
+    const now = new Date()
+    const utcH = now.getUTCHours() + 5
+    const h = utcH >= 24 ? utcH - 24 : utcH
+    const m = now.getMinutes()
+    const dayKey = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`
+    const key = (t) => `${dayKey}-${t}`
+
+    if ((h === 8 || h === 13) && m >= 0 && m <= 5) {
+      const timeKey = h === 8 ? '08:00' : '13:00'
+      const k = key(timeKey)
+      if (sentWeather.has(k)) return
+      sentWeather.add(k)
+
+      const userIds = Object.keys(store.userLocations || {})
+      for (const uid of userIds) {
+        const loc = store.userLocations[uid]
+        try {
+          const { fetchWeatherByCoords } = await import('./client.js')
+          const w = await fetchWeatherByCoords(loc.lat, loc.lon)
+          await botInstance.telegram.sendMessage(Number(uid),
+            `🌤 *${timeKey} ${loc.name || 'Ob-havo'}*\n${w}`,
+            { parse_mode: 'Markdown' }
+          )
+        } catch (e) {
+          console.error(`Weather cron user ${uid}: ${e.message}`)
+        }
+      }
+    }
+  }, 180000)
+}
+
 const app = express()
 app.use(express.json())
 
@@ -53,6 +88,7 @@ const server = app.listen(PORT, () => {
 
 bot.launch().then(() => {
   console.log('🤖 Telegram bot started')
+  startWeatherCron(bot)
 }).catch(err => {
   console.error('Bot failed:', err)
   process.exit(1)
