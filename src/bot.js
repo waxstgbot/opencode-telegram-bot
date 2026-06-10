@@ -404,7 +404,6 @@ export function createBot(token, goApiKey, opencodePassword) {
       return ctx.reply(`❌ Qo'llab-quvvatlanmaydigan fayl: ${doc.mime_type || doc.file_name}\n\nFaqat: PDF, TXT, HTML, JSON, CSV`, mainKb)
     }
 
-    const statusMsg = await ctx.reply('⏳ Fayl o\'qilmoqda...')
     try {
       const link = await ctx.telegram.getFileLink(doc.file_id)
       const docText = await fetchDocumentText(link.href, doc.mime_type)
@@ -412,9 +411,10 @@ export function createBot(token, goApiKey, opencodePassword) {
 
       store.clearUserHistory(ctx.from.id)
       store.taskMode = 'chat'
+      await ctx.reply('⏳ Fayl o\'qilmoqda...')
       await processChat(ctx, caption, null, docText)
     } catch (e) {
-      await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, `❌ ${e.message}`.slice(0, MAX_MSG)).catch(() => {})
+      await ctx.reply(`❌ ${e.message}`.slice(0, MAX_MSG))
     }
   })
 
