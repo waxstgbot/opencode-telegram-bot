@@ -87,13 +87,15 @@ export async function fetchWeatherByCoords(lat, lon) {
 }
 
 export async function fetchDocumentText(url, mime) {
-  const res = await ft(url, 15000)
+  const res = await ft(url, 20000)
   const buf = Buffer.from(await res.arrayBuffer())
 
   if (mime === 'application/pdf' || url.endsWith('.pdf')) {
-    const pdfParse = (await import('pdf-parse')).default
-    const data = await pdfParse(buf)
-    return data.text.slice(0, 8000)
+    const { PDFParse } = await import('pdf-parse')
+    const parser = new PDFParse({ data: buf })
+    const result = await parser.getText()
+    await parser.destroy()
+    return result.text.slice(0, 8000)
   }
 
   return buf.toString('utf8').slice(0, 8000)
