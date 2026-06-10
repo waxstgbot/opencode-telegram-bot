@@ -88,7 +88,7 @@ export async function fetchWeatherByCoords(lat, lon) {
 }
 
 export async function fetchDocumentText(url, mime) {
-  const res = await ft(url, 60000)
+  const res = await ft(url, 120000)
   const buf = Buffer.from(await res.arrayBuffer())
 
   if (mime === 'application/pdf' || url.endsWith('.pdf')) {

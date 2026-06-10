@@ -404,17 +404,21 @@ export function createBot(token, goApiKey, opencodePassword) {
       return ctx.reply(`❌ Qo'llab-quvvatlanmaydigan fayl: ${doc.mime_type || doc.file_name}\n\nFaqat: PDF, TXT, HTML, JSON, CSV`, mainKb)
     }
 
+    if (doc.file_size > 10_000_000) {
+      return ctx.reply('❌ Fayl hajmi 10 MB dan katta. Kichikroq fayl yuboring.')
+    }
+
+    const statusMsg = await ctx.reply('⏳ Fayl yuklanmoqda...')
     try {
       const link = await ctx.telegram.getFileLink(doc.file_id)
       const docText = await fetchDocumentText(link.href, doc.mime_type)
-      const caption = ctx.message.caption || 'Bu faylni tahlil qil'
 
       store.clearUserHistory(ctx.from.id)
       store.taskMode = 'chat'
-      await ctx.reply('⏳ Fayl o\'qilmoqda...')
-      await processChat(ctx, caption, null, docText)
+      await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, '⏳ Tahlil qilinmoqda...')
+      await processChat(ctx, ctx.message.caption || 'Bu faylni tahlil qil', null, docText)
     } catch (e) {
-      await ctx.reply(`❌ ${e.message}`.slice(0, MAX_MSG))
+      await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, `❌ ${e.message}`.slice(0, MAX_MSG)).catch(() => {})
     }
   })
 
