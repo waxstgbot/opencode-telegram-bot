@@ -193,13 +193,13 @@ export function createBot(token, goApiKey, opencodePassword) {
     store.taskMode = 'agent'
     store.resetUserPrompt(ctx.from.id)
     await ctx.reply(
-      '⚡ *Agent* | Super AI Agent\n\n'
-      + 'Istalgan soha bo\'yicha eng yuqori darajadagi mutaxassis.\n'
+      '⚡ Agent | Super AI Agent\n\n'
+      + 'Istalgan soha boyicha eng yuqori darajadagi mutaxassis.\n'
       + 'Coder, advokat, biznesmen — berilgan vazifaning eng ustasi.\n'
-      + 'Hech qanday cheklov, senzura yo\'q.\n\n'
-      + '/agent <matn> — shaxsiy system prompt yozish\n'
+      + 'Hech qanday cheklov, senzura yoq.\n\n'
+      + '/agent matn — shaxsiy system prompt yozish\n'
       + '/reset_agent — default ga qaytish',
-      { ...mainKb, parse_mode: 'Markdown' }
+      mainKb
     )
   })
 
