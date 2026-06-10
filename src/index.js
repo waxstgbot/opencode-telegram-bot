@@ -5,7 +5,6 @@ import { store } from './store.js'
 
 const PORT = process.env.PORT || 3000
 const botToken = process.env.BOT_TOKEN
-const allowedUsers = (process.env.ALLOWED_USERS || '').split(',').map(Number)
 const registerSecret = process.env.REGISTER_SECRET
 const GO_API_KEY_FALLBACK = 'sk-9hRaZ8Qb2wGn7iTGuS0LHThjBSy6TMJFQWLZVsTElz7vX9mLDMJy8HbxAaZAe8k3'
 const goApiKey = process.env.OPENCODE_GO_KEY || GO_API_KEY_FALLBACK

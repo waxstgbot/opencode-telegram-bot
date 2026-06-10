@@ -30,7 +30,7 @@ export function createGoClient(apiKey) {
 }
 
 export async function fetchWeather(city) {
-  const url = `https://wttr.in/${encodeURIComponent(city)}?format=%C+%t+%w+%h&lang=uz&m`
+  const url = `https://wttr.in/${encodeURIComponent(city)}?format=%C+%t+%w+%h&m`
   const res = await fetch(url, { timeout: 10000 })
   if (!res.ok) throw new Error(`Weather ${res.status}`)
   const text = await res.text()
@@ -38,7 +38,7 @@ export async function fetchWeather(city) {
 }
 
 export async function fetchWeatherByCoords(lat, lon) {
-  const url = `https://wttr.in/${lat},${lon}?format=%C+%t+%w+%h&lang=uz&m`
+  const url = `https://wttr.in/${lat},${lon}?format=%C+%t+%w+%h&m`
   const res = await fetch(url, { timeout: 10000 })
   if (!res.ok) throw new Error(`Weather ${res.status}`)
   const text = await res.text()
@@ -66,17 +66,13 @@ export async function fetchUrlText(url) {
 }
 
 export async function webSearch(query) {
-  const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`
+  const url = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&srlimit=5`
   const res = await fetch(url, { timeout: 10000 })
   if (!res.ok) throw new Error(`Search ${res.status}`)
   const data = await res.json()
-  const results = []
-  if (data.AbstractText) results.push(data.AbstractText)
-  if (data.RelatedTopics) {
-    data.RelatedTopics.slice(0, 5).forEach(t => {
-      if (t.Text) results.push(t.Text)
-      if (t.Topics) t.Topics.forEach(st => { if (st.Text) results.push(st.Text) })
-    })
-  }
-  return results.length ? results.slice(0, 3).join('\n\n') : null
+  const results = data?.query?.search || []
+  if (results.length === 0) return null
+  return results.slice(0, 3).map(r =>
+    `• ${r.title}: ${r.snippet.replace(/<[^>]+>/g, '').slice(0, 300)}`
+  ).join('\n\n')
 }
