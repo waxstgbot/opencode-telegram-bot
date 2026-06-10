@@ -48,7 +48,7 @@ export function createGoClient(apiKey) {
         model,
         messages,
         stream: false,
-        max_tokens: options.maxTokens || 500,
+        max_tokens: options.maxTokens || 1024,
       }
       if (options.temperature !== undefined) body.temperature = options.temperature
 
@@ -58,6 +58,7 @@ export function createGoClient(apiKey) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
         },
+        body: JSON.stringify(body),
         signal: AbortSignal.timeout(120000),
       })
       if (!res.ok) {
@@ -95,10 +96,10 @@ export async function fetchDocumentText(url, mime) {
     const parser = new PDFParse({ data: buf })
     const result = await parser.getText()
     await parser.destroy()
-    return result.text.slice(0, 8000)
+    return result.text.slice(0, 3000)
   }
 
-  return buf.toString('utf8').slice(0, 8000)
+  return buf.toString('utf8').slice(0, 3000)
 }
 
 const PIN_UA = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'

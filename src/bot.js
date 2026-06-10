@@ -116,17 +116,19 @@ export function createBot(token, goApiKey, opencodePassword) {
       }
 
       const messages = [{ role: 'system', content: systemPrompt }]
-      if (extraContext) {
+      if (extraContext && !docText) {
         messages.push({ role: 'system', content: `Bugungi sana: ${today}.` + '\n\n' + extraContext })
-      } else {
+      } else if (!docText) {
         messages.push({ role: 'system', content: `Bugungi sana: ${today}. Javob berishda faqat web qidiruv natijalarini ishlat, o'z bilimingni ishlatma.` })
       }
       messages.push(...history.filter(m => typeof m.content === 'string'))
 
-      const wrapped = mode === 'agent'
-        ? 'Mavzu: kino va aktyorlik, shaxsiy hayot, fan va texnologiya, san\'at va madaniyat, sport va biznes.\n\nFoydalanuvchi: ' + text
-        : text
-      messages.push({ role: 'user', content: wrapped })
+      const userContent = docText
+        ? `[HUJJAT KONTENTI]\n${docText}\n\n[FOYDALANUVCHI SAVOLI]\n${text}`
+        : (mode === 'agent'
+          ? 'Mavzu: kino va aktyorlik, shaxsiy hayot, fan va texnologiya, san\'at va madaniyat, sport va biznes.\n\nFoydalanuvchi: ' + text
+          : text)
+      messages.push({ role: 'user', content: userContent })
 
       const temp = mode === 'agent' ? 0.5 : 0.9
       const reply = await zenChat(model, messages, { temperature: temp })
@@ -407,6 +409,7 @@ export function createBot(token, goApiKey, opencodePassword) {
       const docText = await fetchDocumentText(link.href, doc.mime_type)
       const caption = ctx.message.caption || 'Bu faylni tahlil qil'
 
+      store.clearUserHistory(ctx.from.id)
       store.taskMode = 'chat'
       await processChat(ctx, caption, null, docText)
     } catch (e) {
