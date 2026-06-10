@@ -43,6 +43,11 @@ export function createBot(token, goApiKey, opencodePassword) {
   const bot = new Telegraf(token)
   bot.use(auth)
 
+  bot.catch((err, ctx) => {
+    console.error(`Bot error [${ctx?.updateType}]:`, err?.message || err)
+    ctx?.reply(`❌ Xatolik: ${(err?.message || err).slice(0, 200)}`).catch(() => {})
+  })
+
   const goClient = createGoClient(goApiKey)
 
   function getTunnelClient() {
@@ -265,6 +270,19 @@ export function createBot(token, goApiKey, opencodePassword) {
   bot.command('reset_agent', async (ctx) => {
     store.resetUserPrompt(ctx.from.id)
     await ctx.reply('✅ Default agent ga qaytildi', mainKb)
+  })
+
+  bot.command('vibe', async (ctx) => {
+    const text = ctx.payload.trim()
+    if (!text) return ctx.reply('/vibe <matn> (eski nom — /agent bilan bir xil)', mainKb)
+    store.setUserPrompt(ctx.from.id, text)
+    store.taskMode = 'agent'
+    await ctx.reply(`✅ Vibe ornatildi (Agent):\n\n${text}`, mainKb)
+  })
+
+  bot.command('reset_vibe', async (ctx) => {
+    store.resetUserPrompt(ctx.from.id)
+    await ctx.reply('✅ Default ga qaytildi', mainKb)
   })
 
   bot.command('run', async (ctx) => {
