@@ -324,7 +324,7 @@ export function createBot(token, goApiKey, groqApiKey, opencodePassword) {
   bot.command('w', async (ctx) => {
     const text = ctx.payload.trim()
     if (!text) return ctx.reply('/w <shahar nomi> — ob-havo joylashuvini almashtirish', mainKb)
-    store.userLocations[ctx.from.id] = { name: text, lat: 0, lon: 0 }
+    store.setUserLocation(ctx.from.id, { lat: 0, lon: 0, name: text })
     await ctx.reply(`✅ Joylashuv almashtirildi: ${text}\n🌤 Weather tugmasini bosing yoki matn yozing`, mainKb)
   })
 

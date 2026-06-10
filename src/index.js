@@ -42,14 +42,13 @@ function startWeatherCron(botInstance) {
       if (sentWeather.has(k)) return
       sentWeather.add(k)
 
-      const userIds = Object.keys(store.userLocations || {})
+      const userIds = Object.keys(store.userLocations)
       for (const uid of userIds) {
         const loc = store.userLocations[uid]
         try {
           const w = await fetchWeatherByCoords(loc.lat, loc.lon)
           await botInstance.telegram.sendMessage(Number(uid),
             `${timeKey} ${loc.name || 'Ob-havo'}\n${w}`)
-          )
         } catch (e) {
           console.error(`Weather cron user ${uid}: ${e.message}`)
         }

@@ -68,6 +68,8 @@ export const store = {
   get taskMode() { return data.taskMode || 'chat' },
   set taskMode(v) { data.taskMode = v; save() },
 
+  get userLocations() { return data.userLocations || {} },
+
   get isOnline() {
     if (!data.lastSeen || !data.tunnelUrl) return false
     return Date.now() - data.lastSeen < 120_000
