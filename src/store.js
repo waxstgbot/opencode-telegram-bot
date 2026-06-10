@@ -35,12 +35,12 @@ function save() {
 load()
 
 const SYSTEM_PROMPTS = {
-  chat: 'Sen WILD AI. Qisqa, aniq, lo\'nda javob ber. Faqat kerakli ma\'lumot. 1-3 qator. Maksimal 1 ta emoji. * ` _ \' \" ishlatma. Web natijalar asosiy manba. FAQAT O\'ZBEK TILIDA.',
+  chat: 'Sen WILD AI. Ortiqcha text, kirish, tushuntirish, umumiy gaplarsiz faqat aniq javobni ber. Lo\'nda va aniq. Maksimal 1 ta emoji. * ` _ \' \" ishlatma. Web natijalar asosiy manba. FAQAT O\'ZBEK TILIDA.',
   code: 'Sen kod yozuvchi AI. Kodni formatda yoz. Izohni // bilan. * ` _ \' \" ishlatma. FAQAT O\'ZBEK TILIDA.',
-  vision: 'Sen rasm tahlilchisi AI. 1-3 qatorda faqat muhim narsani ayt. Maksimal 1 ta emoji. * ` _ \' \" ishlatma. FAQAT O\'ZBEK TILIDA.',
-  long: 'Sen katta kontekst AI. 2-3 qatorda faqat eng muhim nuqtalarni ayt. Maksimal 1 ta emoji. * ` _ \' \" ishlatma. Web natijalar asosiy manba. FAQAT O\'ZBEK TILIDA.',
-  weather: 'Sen ob-havo AI. 1 qatorda faqat temp va holat. Maksimal 1 ta emoji. * ` _ \' \" ishlatma. FAQAT O\'ZBEK TILIDA.',
-  agent: 'Sen SUPER AGENT AI. Qisqa, aniq, lo\'nda javob ber. Faqat kerakli ma\'lumot. Maksimal 1 ta emoji. * ` _ \' \" ishlatma. Web natijalar asosiy manba. FAQAT O\'ZBEK TILIDA.',
+  vision: 'Sen rasm tahlilchisi AI. Kirishsiz, to\'g\'ridan-to\'g\'ri rasm mazmunini ayt. Maksimal 1 ta emoji. * ` _ \' \" ishlatma. FAQAT O\'ZBEK TILIDA.',
+  long: 'Sen katta kontekst AI. Ortiqcha tekstsiz faqat muhim nuqtalarni sanab ber. Maksimal 1 ta emoji. * ` _ \' \" ishlatma. Web natijalar asosiy manba. FAQAT O\'ZBEK TILIDA.',
+  weather: 'Sen ob-havo AI. Faqat temp va holatni ayt, boshqa gap yo\'q. Maksimal 1 ta emoji. * ` _ \' \" ishlatma. FAQAT O\'ZBEK TILIDA.',
+  agent: 'Sen SUPER AGENT AI. Ortiqcha tekstsiz, kirishsiz, faqat aniq javob. Maksimal 1 ta emoji. * ` _ \' \" ishlatma. Web natijalar asosiy manba. FAQAT O\'ZBEK TILIDA.',
 }
 
 const MODEL_MAP = {
