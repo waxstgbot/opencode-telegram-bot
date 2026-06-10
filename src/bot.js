@@ -6,9 +6,6 @@ const ALLOWED_USERS_RAW = process.env.ALLOWED_USERS || '5461818003,1133984065'
 const ALLOWED_USERS = ALLOWED_USERS_RAW.split(',').map(Number)
 const SHELL_SESSION_TITLE = '__telegram-shell__'
 
-const HF_KEY = process.env.HF_KEY || ''
-const STABILITY_KEY = process.env.STABILITY_KEY || ''
-
 const mainKb = Markup.keyboard([
   ['💬 Chat', '💻 Code', '🖼 Vision'],
   ['📚 Long', '🎨 Gen', '📊 Status'],
@@ -45,7 +42,7 @@ function imageContent(text, imageUrl) {
   ]
 }
 
-export function createBot(token, opencodePassword, goApiKey) {
+export function createBot(token, opencodePassword, goApiKey, hfKey, stabilityKey) {
   const bot = new Telegraf(token)
   bot.use(auth)
 
