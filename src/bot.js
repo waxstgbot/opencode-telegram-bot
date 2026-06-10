@@ -174,9 +174,14 @@ export function createBot(token, goApiKey, groqApiKey, opencodePassword) {
     updateKb()
     await ctx.reply(
       'WILD AI\n\n'
-      + '💬 Chat  💻 Code  🖼 Vision\n'
-      + '📚 Long  🌤 Weather  ⚡ Agent\n'
-      + '▶️ Run  📊 Status  🗑 Clear\n\n'
+      + '💬 Chat — suhbat, savol-javob, web qidiruv\n'
+      + '💻 Code — kod yozish, debug, exploit tahlil\n'
+      + '🖼 Vision — rasm tahlil, matn oqish\n'
+      + '📚 Long — katta kontekst, hujjat tahlil\n'
+      + '🌤 Weather — ob-havo, avtomatik 08/13/19\n'
+      + '⚡ Agent — istalgan kasb boyicha mutaxassis\n'
+      + '▶️ Run — kod bajarish (Online)\n\n'
+      + '📌 Pinterest  🔗 URL  📄 PDF/TXT\n'
       + '❓ Help — batafsil',
       mainKb
     )
