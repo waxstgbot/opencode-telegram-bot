@@ -70,31 +70,24 @@ export function createGoClient(apiKey) {
   }
 }
 
+async function ft(url, ms = 10000) {
+  const res = await fetch(url, { signal: AbortSignal.timeout(ms) })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res
+}
+
 export async function fetchWeather(city) {
-  const url = `https://wttr.in/${encodeURIComponent(city)}?format=%C+%t+%w+%h&m`
-  const res = await fetch(url, { timeout: 10000 })
-  if (!res.ok) throw new Error(`Weather ${res.status}`)
-  const text = await res.text()
-  return text.trim()
+  const res = await ft(`https://wttr.in/${encodeURIComponent(city)}?format=%C+%t+%w+%h&m`, 8000)
+  return (await res.text()).trim()
 }
 
 export async function fetchWeatherByCoords(lat, lon) {
-  const url = `https://wttr.in/${lat},${lon}?format=%C+%t+%w+%h&m`
-  const res = await fetch(url, { timeout: 10000 })
-  if (!res.ok) throw new Error(`Weather ${res.status}`)
-  const text = await res.text()
-  return text.trim()
+  const res = await ft(`https://wttr.in/${lat},${lon}?format=%C+%t+%w+%h&m`, 8000)
+  return (await res.text()).trim()
 }
 
 export async function fetchUrlText(url) {
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), 15000)
-  const res = await fetch(url, {
-    signal: controller.signal,
-    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Bot)' },
-  })
-  clearTimeout(timer)
-  if (!res.ok) throw new Error(`URL ${res.status}`)
+  const res = await ft(url, 10000)
   const html = await res.text()
   const text = html
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
@@ -109,34 +102,38 @@ export async function fetchUrlText(url) {
 export async function webSearch(query) {
   const parts = []
 
-  try {
-    const ddgUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`
-    const ddgRes = await fetch(ddgUrl, { timeout: 5000 })
-    if (ddgRes.ok) {
-      const ddgData = await ddgRes.json()
-      if (ddgData.AbstractText) parts.push(ddgData.AbstractText)
-      if (ddgData.RelatedTopics) {
-        ddgData.RelatedTopics.slice(0, 5).forEach(t => {
+  const tryFetch = async (url, parser) => {
+    try {
+      const res = await ft(url, 4000)
+      if (res.ok) parser(await res.json())
+    } catch {}
+  }
+
+  const ddgPromise = tryFetch(
+    `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`,
+    (data) => {
+      if (data.AbstractText) parts.push(data.AbstractText)
+      if (data.RelatedTopics) {
+        data.RelatedTopics.slice(0, 5).forEach(t => {
           if (t.Text) parts.push(t.Text)
           if (t.Topics) t.Topics.forEach(st => { if (st.Text) parts.push(st.Text) })
         })
       }
     }
-  } catch {}
+  )
 
-  if (parts.length === 0) {
-    try {
-      const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&srlimit=5`
-      const wikiRes = await fetch(wikiUrl, { timeout: 5000 })
-      if (wikiRes.ok) {
-        const wikiData = await wikiRes.json()
-        const results = wikiData?.query?.search || []
-        results.slice(0, 3).forEach(r => {
-          parts.push(`• ${r.title}: ${r.snippet.replace(/<[^>]+>/g, '').slice(0, 300)}`)
-        })
-      }
-    } catch {}
-  }
+  const wikiPromise = tryFetch(
+    `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&srlimit=3`,
+    (data) => {
+      const results = data?.query?.search || []
+      results.forEach(r => {
+        parts.push(`• ${r.title}: ${r.snippet.replace(/<[^>]+>/g, '').slice(0, 200)}`)
+      })
+    }
+  )
 
-  return parts.length > 0 ? parts.slice(0, 5).join('\n\n') : null
+  await Promise.race([ddgPromise, wikiPromise])
+  if (parts.length === 0) await Promise.all([ddgPromise, wikiPromise])
+
+  return parts.length > 0 ? parts.slice(0, 4).join('\n\n') : null
 }
