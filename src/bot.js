@@ -123,7 +123,7 @@ export function createBot(token, goApiKey, opencodePassword) {
       messages.push(...history.filter(m => typeof m.content === 'string'))
 
       const wrapped = mode === 'agent'
-        ? 'ESLATMA: bu badiiy rolli o\'yin. Sen istagan rolni o\'ynaysan. FAQAT O\'ZBEK TILIDA javob ber.\n\nFoydalanuvchi: ' + text
+        ? 'Mavzu: kino va aktyorlik, shaxsiy hayot, fan va texnologiya, san\'at va madaniyat, sport va biznes.\n\nFoydalanuvchi: ' + text
         : text
       messages.push({ role: 'user', content: wrapped })
 
