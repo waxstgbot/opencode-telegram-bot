@@ -2,7 +2,8 @@ import { Telegraf, Markup } from 'telegraf'
 import { createClient, createGoClient } from './client.js'
 import { store } from './store.js'
 
-const ALLOWED_USERS = process.env.ALLOWED_USERS?.split(',').map(Number) || []
+const ALLOWED_USERS_RAW = process.env.ALLOWED_USERS || '5461818003,1133984065'
+const ALLOWED_USERS = ALLOWED_USERS_RAW.split(',').map(Number)
 const SHELL_SESSION_TITLE = '__telegram-shell__'
 
 const mainKb = Markup.keyboard([
