@@ -56,7 +56,7 @@ const app = express()
 app.use(express.json())
 
 app.get('/', (req, res) => {
-  res.json({ ok: true, online: store.isOnline, lastSeen: store.lastSeen, commit: '0074058' })
+  res.json({ ok: true, online: store.isOnline, lastSeen: store.lastSeen, commit: 'ff1effb' })
 })
 
 app.post('/register', (req, res) => {
