@@ -36,8 +36,8 @@ function startWeatherCron(botInstance) {
     const dayKey = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`
     const key = (t) => `${dayKey}-${t}`
 
-    if ((h === 8 || h === 13) && m >= 0 && m <= 5) {
-      const timeKey = h === 8 ? '08:00' : '13:00'
+    if ((h === 8 || h === 13 || h === 19) && m >= 0 && m <= 5) {
+      const timeKey = h === 8 ? '08:00' : h === 13 ? '13:00' : '19:00'
       const k = key(timeKey)
       if (sentWeather.has(k)) return
       sentWeather.add(k)
@@ -48,8 +48,7 @@ function startWeatherCron(botInstance) {
         try {
           const w = await fetchWeatherByCoords(loc.lat, loc.lon)
           await botInstance.telegram.sendMessage(Number(uid),
-            `🌤 *${timeKey} ${loc.name || 'Ob-havo'}*\n${w}`,
-            { parse_mode: 'Markdown' }
+            `${timeKey} ${loc.name || 'Ob-havo'}\n${w}`)
           )
         } catch (e) {
           console.error(`Weather cron user ${uid}: ${e.message}`)

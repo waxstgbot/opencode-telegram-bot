@@ -174,13 +174,13 @@ export function createBot(token, goApiKey, groqApiKey, opencodePassword) {
     updateKb()
     const info = store.getModelInfo()
     await ctx.reply(
-      '🤖 WILD AI\n\n'
-      + `🧠 ${info.label} · ${store.mode === 'online' ? '💻 Komp rejimi' : '📱 Telefon AI rejimi'}\n\n`
+      'WILD AI\n\n'
+      + `Model: ${info.label} | ${store.mode === 'online' ? 'Komp rejimi' : 'Telefon AI rejimi'}\n\n`
       + 'Tugmalardan foydalaning:\n'
-      + '• 📌 Pinterest linki → rasm/video yuklab beradi\n'
-      + '• 🔗 URL yuboring → bot o\'qiydi\n'
-      + '• Oddiy matn → AI + web qidiruv\n'
-      + '• Ob-havo avtomatik: 08:00 / 13:00',
+      + '- Pinterest linki -> rasm/video yuklab beradi\n'
+      + '- URL yuboring -> bot oqiydi\n'
+      + '- Oddiy matn -> AI + web qidiruv\n'
+      + '- Ob-havo avtomatik: 08:00 / 13:00 / 19:00',
       mainKb
     )
   })
@@ -189,11 +189,11 @@ export function createBot(token, goApiKey, groqApiKey, opencodePassword) {
     store.taskMode = 'chat'
     store.resetUserPrompt(ctx.from.id)
     store.clearUserHistory(ctx.from.id)
-    await ctx.reply('🧠 *Chat* | Nemotron 3 Ultra\n\n'
-      + '📌 Pinterest linki → rasm yuklab beradi\n'
-      + '🔗 URL yuboring → o\'qib beradi\n'
-      + 'Matn yozing → AI + web qidiruv',
-      { ...mainKb, parse_mode: 'Markdown' }
+    await ctx.reply('Chat | Nemotron 3 Ultra\n\n'
+      + 'Pinterest linki -> rasm yuklab beradi\n'
+      + 'URL yuboring -> oqib beradi\n'
+      + 'Matn yozing -> AI + web qidiruv',
+      mainKb
     )
   })
 
@@ -201,21 +201,21 @@ export function createBot(token, goApiKey, groqApiKey, opencodePassword) {
     store.taskMode = 'code'
     store.resetUserPrompt(ctx.from.id)
     store.clearUserHistory(ctx.from.id)
-    await ctx.reply('🧠 *Code* | North Mini Code Free\n\nKod yozish rejimi', { ...mainKb, parse_mode: 'Markdown' })
+    await ctx.reply('Code | North Mini Code Free\n\nKod yozish rejimi', mainKb)
   })
 
   bot.hears('🖼 Vision', async (ctx) => {
     store.taskMode = 'vision'
     store.resetUserPrompt(ctx.from.id)
     store.clearUserHistory(ctx.from.id)
-    await ctx.reply('🧠 *Vision* | MiMo-V2.5 Free\n\nRasm yuboring, men tahlil qilaman', { ...mainKb, parse_mode: 'Markdown' })
+    await ctx.reply('Vision | MiMo-V2.5 Free\n\nRasm yuboring, men tahlil qilaman', mainKb)
   })
 
   bot.hears('📚 Long', async (ctx) => {
     store.taskMode = 'long'
     store.resetUserPrompt(ctx.from.id)
     store.clearUserHistory(ctx.from.id)
-    await ctx.reply('🧠 *Long* | Qwen3.6 Plus Free\n\nKatta kontekst rejimi', { ...mainKb, parse_mode: 'Markdown' })
+    await ctx.reply('Long | Qwen3.6 Plus Free\n\nKatta kontekst rejimi', mainKb)
   })
 
   bot.hears('🌤 Weather', async (ctx) => {
@@ -226,12 +226,12 @@ export function createBot(token, goApiKey, groqApiKey, opencodePassword) {
     if (loc) {
       try {
         const w = await fetchWeatherByCoords(loc.lat, loc.lon)
-        await ctx.reply(`🌤 *${loc.name || 'Sizning joy'}*\n\n${w}\n\n🔄 Yangilash uchun location yuboring\n🏙 Shahar nomini yozing`, { ...mainKb, parse_mode: 'Markdown' })
+        await ctx.reply(loc.name ? `🌤 ${loc.name}\n\n${w}\n\n🔄 Yangilash uchun location yuboring\n🏙 Shahar nomini yozing` : `🌤 Sizning joy\n\n${w}\n\n🔄 Yangilash uchun location yuboring\n🏙 Shahar nomini yozing`, mainKb)
       } catch {
         await ctx.reply('🌤 Ob-havo\n\nLocation yuboring yoki shahar nomini yozing', mainKb)
       }
     } else {
-      await ctx.reply('🌤 *Ob-havo*\n\n📍 Location yuboring yoki\n🏙 Shahar nomini yozing\n\nMisol: Toshkent, London', { ...mainKb, parse_mode: 'Markdown' })
+      await ctx.reply('🌤 Ob-havo\n\n📍 Location yuboring yoki\n🏙 Shahar nomini yozing\n\nMisol: Toshkent, London', mainKb)
     }
   })
 
@@ -252,16 +252,16 @@ export function createBot(token, goApiKey, groqApiKey, opencodePassword) {
 
   bot.hears('▶️ Run', async (ctx) => {
     if (store.mode !== 'online' || !store.isOnline) {
-      return ctx.reply('💤 *Run* faqat Online rejimda ishlaydi. /onl', { ...mainKb, parse_mode: 'Markdown' })
+      return ctx.reply('Run faqat Online rejimda ishlaydi. /onl', mainKb)
     }
     await ctx.reply(
-      '▶️ *Run* — kod bajarish\n\n'
-      + 'Format: `/run <til> <kod>`\n\n'
-      + 'Misol: `/run python print("salom")`\n'
-      + 'Misol: `/run js console.log(2+2)`\n'
-      + 'Misol: `/run bash echo "test"`\n\n'
-      + 'Qo\'llab-quvvatlanadi: python, js, cpp, rust, go, php, ruby, bash, java va 50+ til',
-      { ...mainKb, parse_mode: 'Markdown' }
+      'Run — kod bajarish\n\n'
+      + 'Format: /run <til> <kod>\n\n'
+      + 'Misol: /run python print("salom")\n'
+      + 'Misol: /run js console.log(2+2)\n'
+      + 'Misol: /run bash echo "test"\n\n'
+      + 'Qollab-quvvatlanadi: python, js, cpp, rust, go, php, ruby, bash, java va 50+ til',
+      mainKb
     )
   })
 
@@ -269,15 +269,15 @@ export function createBot(token, goApiKey, groqApiKey, opencodePassword) {
     const info = store.getModelInfo()
     const loc = store.getUserLocation(ctx.from.id)
     await ctx.reply(
-      '📊 *Bot Status*\n'
-      + `🤖 Bot: ✅\n`
-      + `🧠 Model: ${info.label}\n`
-      + `📝 Rejim: ${store.taskMode.toUpperCase()}\n`
-      + `📡 ${store.mode === 'online' ? '✅ Online' : '💤 Offline'}\n`
-      + `💻 Kompyuter: ${store.isOnline ? '✅' : '💤'}\n`
-      + `🕐 ${formatDate(store.lastSeen)}\n`
-      + `🌤 Joy: ${loc ? loc.name || `${loc.lat},${loc.lon}` : '—'}`,
-      { ...mainKb, parse_mode: 'Markdown' }
+      'Bot Status\n'
+      + `Bot: ✅\n`
+      + `Model: ${info.label}\n`
+      + `Rejim: ${store.taskMode.toUpperCase()}\n`
+      + `${store.mode === 'online' ? 'Online: ✅' : 'Online: 💤'}\n`
+      + `Kompyuter: ${store.isOnline ? '✅' : '💤'}\n`
+      + `${formatDate(store.lastSeen)}\n`
+      + `Joy: ${loc ? loc.name || `${loc.lat},${loc.lon}` : '—'}`,
+      mainKb
     )
   })
 
@@ -288,22 +288,23 @@ export function createBot(token, goApiKey, groqApiKey, opencodePassword) {
 
   bot.hears('❓ Help', async (ctx) => {
     await ctx.reply(
-      '🤖 *WILD AI Bot*\n\n'
-      + '💬 *Chat* — Nemotron 3 Ultra (WILD suhbat + web qidiruv)\n'
-      + '💻 *Code* — North Mini Code (kod yozish)\n'
-      + '🖼 *Vision* — MiMo V2.5 (rasm tahlil)\n'
-      + '📚 *Long* — Qwen3.6 Plus (katta kontekst)\n'
-      + '🌤 *Weather* — ob-havo (location/shar)\n'
-      + '⚡ *Agent* — Super AI Agent (istalgan soha bo\'yicha mutaxassis)\n'
-      + '▶️ *Run* — kod bajarish (faqat Online)\n'
-      + '📊 *Status* — bot holati\n'
-      + '🗑 *Clear* — tarixni tozalash\n'
-      + '🌤 Avtomatik ob-havo: 08:00 / 13:00\n\n'
-      + '📌 Pinterest linki → rasmni yuklab beradi\n'
-      + '🔗 URL yuboring → bot o\'qib beradi\n'
-      + '🌐 Har bir xabar web qidiruv bilan boyitiladi\n'
-      + '💻 /onl = Komp rejimi  |  📱 /ofl = Telefon AI rejimi',
-      { ...mainKb, parse_mode: 'Markdown' }
+      'WILD AI Bot\n\n'
+      + 'Chat — Nemotron 3 Ultra (WILD suhbat + web qidiruv)\n'
+      + 'Code — North Mini Code (kod yozish)\n'
+      + 'Vision — MiMo V2.5 (rasm tahlil)\n'
+      + 'Long — Qwen3.6 Plus (katta kontekst)\n'
+      + 'Weather — ob-havo (location/shar)\n'
+      + 'Agent — Super AI Agent (istalgan soha boyicha mutaxassis)\n'
+      + 'Run — kod bajarish (faqat Online)\n'
+      + 'Status — bot holati\n'
+      + 'Clear — tarixni tozalash\n'
+      + 'Avtomatik ob-havo: 08:00 / 13:00 / 19:00\n'
+      + '/w shahar — ob-havo manzilini ozgartirish\n\n'
+      + 'Pinterest linki -> rasmni yuklab beradi\n'
+      + 'URL yuboring -> bot oqib beradi\n'
+      + 'Har bir xabar web qidiruv bilan boyitiladi\n'
+      + '/onl = Komp rejimi  |  /ofl = Telefon AI rejimi',
+      mainKb
     )
   })
 
@@ -318,6 +319,13 @@ export function createBot(token, goApiKey, groqApiKey, opencodePassword) {
   bot.command('reset_agent', async (ctx) => {
     store.resetUserPrompt(ctx.from.id)
     await ctx.reply('✅ Default agent ga qaytildi', mainKb)
+  })
+
+  bot.command('w', async (ctx) => {
+    const text = ctx.payload.trim()
+    if (!text) return ctx.reply('/w <shahar nomi> — ob-havo joylashuvini almashtirish', mainKb)
+    store.userLocations[ctx.from.id] = { name: text, lat: 0, lon: 0 }
+    await ctx.reply(`✅ Joylashuv almashtirildi: ${text}\n🌤 Weather tugmasini bosing yoki matn yozing`, mainKb)
   })
 
   bot.command('vibe', async (ctx) => {
@@ -335,19 +343,19 @@ export function createBot(token, goApiKey, groqApiKey, opencodePassword) {
 
   bot.command('run', async (ctx) => {
     if (store.mode !== 'online' || !store.isOnline) {
-      return ctx.reply('💤 *Run* faqat Online rejimda ishlaydi. /onl', { ...mainKb, parse_mode: 'Markdown' })
+      return ctx.reply('Run faqat Online rejimda ishlaydi. /onl', mainKb)
     }
 
     const payload = ctx.payload.trim()
     const sep = payload.indexOf(' ')
     if (sep === -1) {
-      return ctx.reply('Format: `/run <til> <kod>`\nMisol: `/run python print("salom")`', { ...mainKb, parse_mode: 'Markdown' })
+      return ctx.reply('Format: /run <til> <kod>\nMisol: /run python print("salom")', mainKb)
     }
 
     const language = payload.slice(0, sep).trim().toLowerCase()
     const code = payload.slice(sep + 1).trim()
     if (!language || !code) {
-      return ctx.reply('Format: `/run <til> <kod>`', { ...mainKb, parse_mode: 'Markdown' })
+      return ctx.reply('Format: /run <til> <kod>', mainKb)
     }
 
     const client = getTunnelClient()
@@ -365,24 +373,24 @@ export function createBot(token, goApiKey, groqApiKey, opencodePassword) {
       let shellId = sessions?.find(s => s.title === '__telegram-shell__')?.id
       if (!shellId) shellId = (await client.createSession('__telegram-shell__')).id
       const output = await client.runShell(shellId, shellCmd)
-      const text = `▶️ *${language}*\n\`\`\`${language}\n${code.slice(0, 500)}\n\`\`\`\n\n📤 *Natija:*\n\`\`\`\n${(output || '✅').slice(0, 3000)}\n\`\`\``.slice(0, MAX_MSG)
-      await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, text, { parse_mode: 'Markdown' })
+      const text = `[${language}]\n${code.slice(0, 500)}\n\nNatija:\n${(output || '✅').slice(0, 3000)}`.slice(0, MAX_MSG)
+      await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, text)
     } catch (e) {
       await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, `❌ ${e.message}`.slice(0, MAX_MSG)).catch(() => {})
     }
   })
 
   bot.command('onl', async (ctx) => {
-    if (!store.isOnline) return ctx.reply('💤 Kompyuter offline', mainKb)
+    if (!store.isOnline) return ctx.reply('Kompyuter offline', mainKb)
     store.mode = 'online'
     updateKb()
-    await ctx.reply('💻 *Komp rejimi* faollashtirildi\n\n▶️ Run — kod bajarish\n🔗 URL o\'qish\n💻 Shell komandalari', { ...mainKb, parse_mode: 'Markdown' })
+    await ctx.reply('Komp rejimi faollashtirildi\n\nRun — kod bajarish\nURL oqish\nShell komandalari', mainKb)
   })
 
   bot.command('ofl', async (ctx) => {
     store.mode = 'offline'
     updateKb()
-    await ctx.reply('📱 *Telefon AI rejimi*\n\nAI modellari + web qidiruv + ob-havo', { ...mainKb, parse_mode: 'Markdown' })
+    await ctx.reply('Telefon AI rejimi\n\nAI modellari + web qidiruv + ob-havo', mainKb)
   })
 
   bot.command('clear', async (ctx) => {
@@ -396,7 +404,7 @@ export function createBot(token, goApiKey, groqApiKey, opencodePassword) {
 
     try {
       const w = await fetchWeatherByCoords(latitude, longitude)
-      await ctx.reply(`🌤 *Sizning joyingiz*\n\n${w}`, { ...mainKb, parse_mode: 'Markdown' })
+      await ctx.reply(`🌤 Sizning joyingiz\n\n${w}`, mainKb)
     } catch {
       await ctx.reply(`📍 Joylashuv saqlandi (${latitude}, ${longitude})`, mainKb)
     }
@@ -464,14 +472,14 @@ export function createBot(token, goApiKey, groqApiKey, opencodePassword) {
         const w = await fetchWeatherByCoords(lat, lon).catch(() => null)
         if (w) {
           store.setUserLocation(ctx.from.id, { lat, lon, name: `${lat},${lon}` })
-          return ctx.reply(`🌤 *${lat},${lon}*\n\n${w}`, { ...mainKb, parse_mode: 'Markdown' })
+          return ctx.reply(`🌤 ${lat},${lon}\n\n${w}`, mainKb)
         }
       }
 
       try {
         const w = await fetchWeather(text)
         store.setUserLocation(ctx.from.id, { lat: 0, lon: 0, name: text })
-        await ctx.reply(`🌤 *${text}*\n\n${w}`, { ...mainKb, parse_mode: 'Markdown' })
+        await ctx.reply(`🌤 ${text}\n\n${w}`, mainKb)
       } catch {
         await ctx.reply('❌ Ob-havo olinmadi. Shahar nomini to\'g\'ri yozing yoki location yuboring.', mainKb)
       }
