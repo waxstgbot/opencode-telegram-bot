@@ -51,6 +51,8 @@ export function createGoClient(apiKey) {
         max_tokens: options.maxTokens || 500,
       }
       if (options.temperature !== undefined) body.temperature = options.temperature
+      body.skip_guardrails = true
+      body.safety = false
 
       const res = await fetch(`${BASE}/chat/completions`, {
         method: 'POST',
