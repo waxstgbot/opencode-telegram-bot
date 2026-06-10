@@ -1,5 +1,5 @@
 import { Telegraf, Markup } from 'telegraf'
-import { createClient, createGoClient, fetchWeather, fetchWeatherByCoords, fetchUrlText, fetchDocumentText, webSearch, detectPlatform, downloadFromPlatform } from './client.js'
+import { createClient, createGoClient, createGroqClient, fetchWeather, fetchWeatherByCoords, fetchUrlText, fetchDocumentText, webSearch, detectPlatform, downloadFromPlatform } from './client.js'
 import { store } from './store.js'
 
 const ALLOWED_USERS_RAW = process.env.ALLOWED_USERS || '5461818003,1133984065'
@@ -39,7 +39,7 @@ function auth(ctx, next) {
   return next()
 }
 
-export function createBot(token, goApiKey, opencodePassword) {
+export function createBot(token, goApiKey, groqApiKey, opencodePassword) {
   const bot = new Telegraf(token, { handlerTimeout: 300_000 })
   bot.use(auth)
 
@@ -49,6 +49,7 @@ export function createBot(token, goApiKey, opencodePassword) {
   })
 
   const goClient = createGoClient(goApiKey)
+  const groqClient = groqApiKey ? createGroqClient(groqApiKey) : null
 
   function getTunnelClient() {
     const url = store.tunnelUrl
@@ -61,8 +62,28 @@ export function createBot(token, goApiKey, opencodePassword) {
     return mainKb
   }
 
-  async function zenChat(model, messages, opts) {
-    return goClient.chat(model, messages, opts)
+  async function chatWithFallback(model, messages, opts, skipGroq) {
+    const errs = []
+    const groqFast = 'llama-3.3-70b-versatile'
+    const groqFallback = 'llama-3.1-8b-instant'
+
+    if (groqClient && !skipGroq) {
+      for (const gm of [groqFast, groqFallback]) {
+        try {
+          return await groqClient.chat(gm, messages, opts)
+        } catch (e) {
+          errs.push(`Groq-${gm.split('-')[1] || gm}: ${e.message}`)
+          if (e.status !== 429) break
+        }
+      }
+    }
+
+    try {
+      return await goClient.chat(model, messages, opts)
+    } catch (e) {
+      errs.push(`Zen: ${e.message}`)
+      throw new Error(errs.join(' | '))
+    }
   }
 
   async function processChat(ctx, text, imageUrl, docText) {
@@ -88,7 +109,7 @@ export function createBot(token, goApiKey, opencodePassword) {
             { type: 'image_url', image_url: { url: imageUrl } },
           ]},
         ]
-        const reply = await zenChat(model, messages, { temperature: 0.9 })
+        const reply = await chatWithFallback(model, messages, { temperature: 0.9 }, true)
         await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, (reply || '✅').slice(0, MAX_MSG))
         return
       }
@@ -132,7 +153,7 @@ export function createBot(token, goApiKey, opencodePassword) {
       messages.push({ role: 'user', content: userContent })
 
       const temp = mode === 'agent' ? 0.5 : 0.9
-      const reply = await zenChat(model, messages, { temperature: temp })
+      const reply = await chatWithFallback(model, messages, { temperature: temp })
 
       store.addUserMessage(ctx.from.id, 'user', text)
       store.addUserMessage(ctx.from.id, 'assistant', reply)

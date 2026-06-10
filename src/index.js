@@ -13,13 +13,14 @@ const registerSecret = process.env.REGISTER_SECRET
 const opencodePassword = process.env.OPENCODE_SERVER_PASSWORD || ''
 const GO_API_KEY_FALLBACK = 'sk-9hRaZ8Qb2wGn7iTGuS0LHThjBSy6TMJFQWLZVsTElz7vX9mLDMJy8HbxAaZAe8k3'
 const goApiKey = process.env.OPENCODE_GO_KEY || GO_API_KEY_FALLBACK
+const groqApiKey = process.env.GROQ_API_KEY || ''
 
 if (!botToken) {
   console.error('BOT_TOKEN env variable required')
   process.exit(1)
 }
 
-const bot = createBot(botToken, goApiKey, opencodePassword)
+const bot = createBot(botToken, goApiKey, groqApiKey, opencodePassword)
 
 const sentWeather = new Set()
 
