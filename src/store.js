@@ -112,6 +112,10 @@ export const store = {
     save()
   },
 
+  hasCustomPrompt(userId) {
+    return !!(data.userPrompts?.[userId])
+  },
+
   clearUserHistory(userId) {
     data.chatHistory[userId] = []
     save()

@@ -69,6 +69,7 @@ export function createBot(token, goApiKey, opencodePassword) {
     const model = store.getModelName()
     const mode = store.taskMode
     const systemPrompt = store.getSystemPrompt(ctx.from.id)
+    const hasCustom = store.hasCustomPrompt(ctx.from.id)
     const history = store.getUserHistory(ctx.from.id)
     const urls = text.match(URL_REGEX)
 
@@ -94,9 +95,7 @@ export function createBot(token, goApiKey, opencodePassword) {
 
       const today = new Date().toISOString().split('T')[0]
 
-      if (docText) {
-        extraContext = 'Hujjat kontenti (ASOSIY MANBA — shu ma\'lumotlarni ishlat):\n' + docText
-      } else if (urls && urls.length > 0) {
+      if (urls && urls.length > 0 && !docText) {
         extraContext = 'Web sahifa kontenti (ASOSIY MANBA):\n'
         for (const url of urls.slice(0, 2)) {
           try {
@@ -106,7 +105,7 @@ export function createBot(token, goApiKey, opencodePassword) {
             extraContext += `[${url}]: yuklab bo\'lmadi (${e.message})\n\n`
           }
         }
-      } else {
+      } else if (!hasCustom) {
         try {
           const searchResults = await webSearch(text)
           if (searchResults) {
@@ -116,16 +115,18 @@ export function createBot(token, goApiKey, opencodePassword) {
       }
 
       const messages = [{ role: 'system', content: systemPrompt }]
-      if (extraContext && !docText) {
-        messages.push({ role: 'system', content: `Bugungi sana: ${today}.` + '\n\n' + extraContext })
-      } else if (!docText) {
-        messages.push({ role: 'system', content: `Bugungi sana: ${today}. Javob berishda faqat web qidiruv natijalarini ishlat, o'z bilimingni ishlatma.` })
+      if (!hasCustom) {
+        if (extraContext && !docText) {
+          messages.push({ role: 'system', content: `Bugungi sana: ${today}.` + '\n\n' + extraContext })
+        } else if (!docText) {
+          messages.push({ role: 'system', content: `Bugungi sana: ${today}. Javob berishda faqat web qidiruv natijalarini ishlat, o'z bilimingni ishlatma.` })
+        }
       }
       messages.push(...history.filter(m => typeof m.content === 'string'))
 
       const userContent = docText
         ? `[HUJJAT KONTENTI]\n${docText}\n\n[FOYDALANUVCHI SAVOLI]\n${text}`
-        : (mode === 'agent'
+        : (mode === 'agent' && !hasCustom
           ? 'Mavzu: kino va aktyorlik, shaxsiy hayot, fan va texnologiya, san\'at va madaniyat, sport va biznes.\n\nFoydalanuvchi: ' + text
           : text)
       messages.push({ role: 'user', content: userContent })
