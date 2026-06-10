@@ -149,7 +149,7 @@ export function createBot(token, goApiKey, opencodePassword) {
       '🤖 WILD AI\n\n'
       + `🧠 ${info.label} · ${store.mode === 'online' ? '💻 Komp rejimi' : '📱 Telefon AI rejimi'}\n\n`
       + 'Tugmalardan foydalaning:\n'
-      + '• 📌 Pinterest linki → rasmni yuklab beradi\n'
+      + '• 📌 Pinterest linki → rasm/video yuklab beradi\n'
       + '• 🔗 URL yuboring → bot o\'qiydi\n'
       + '• Oddiy matn → AI + web qidiruv\n'
       + '• Ob-havo avtomatik: 08:00 / 13:00',
