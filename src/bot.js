@@ -289,19 +289,20 @@ export function createBot(token, goApiKey, groqApiKey, opencodePassword) {
   bot.hears('❓ Help', async (ctx) => {
     await ctx.reply(
       'WILD AI Bot\n\n'
-      + 'Chat — Nemotron 3 Ultra (WILD suhbat + web qidiruv)\n'
-      + 'Code — North Mini Code (kod yozish)\n'
-      + 'Vision — MiMo V2.5 (rasm tahlil)\n'
-      + 'Long — Qwen3.6 Plus (katta kontekst)\n'
-      + 'Weather — ob-havo (location/shar)\n'
-      + 'Agent — Super AI Agent (istalgan soha boyicha mutaxassis)\n'
+      + 'Chat — suhbat, savol-javob, web qidiruv, fayl tahlil\n'
+      + 'Code — kod yozish, debug, refactor, exploit tahlil\n'
+      + 'Vision — rasm tahlil, matn oqish, diagramma\n'
+      + 'Long — katta kontekst, hujjat tahlil, malumot extract\n'
+      + 'Weather — ob-havo (location yoki shahar nomi)\n'
+      + 'Agent — istalgan kasb boyicha super mutaxassis\n'
       + 'Run — kod bajarish (faqat Online)\n'
       + 'Status — bot holati\n'
       + 'Clear — tarixni tozalash\n'
       + 'Avtomatik ob-havo: 08:00 / 13:00 / 19:00\n'
       + '/w shahar — ob-havo manzilini ozgartirish\n\n'
-      + 'Pinterest linki -> rasmni yuklab beradi\n'
+      + 'Pinterest linki -> rasm/video yuklab beradi\n'
       + 'URL yuboring -> bot oqib beradi\n'
+      + 'Fayl yuboring -> PDF/TXT/JSON/CSV tahlil\n'
       + 'Har bir xabar web qidiruv bilan boyitiladi\n'
       + '/onl = Komp rejimi  |  /ofl = Telefon AI rejimi',
       mainKb
