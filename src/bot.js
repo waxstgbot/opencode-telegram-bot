@@ -136,10 +136,10 @@ export function createBot(token, opencodePassword, goApiKey, hfKey, stabilityKey
           buf = await genClient.pollinations(prompt)
           break
         case 'huggingface':
-          buf = await genClient.huggingFace(prompt, HF_KEY)
+          buf = await genClient.huggingFace(prompt, hfKey)
           break
         case 'stability':
-          buf = await genClient.stability(prompt, STABILITY_KEY)
+          buf = await genClient.stability(prompt, stabilityKey)
           break
       }
       await ctx.deleteMessage(statusMsg.message_id)
