@@ -6,14 +6,14 @@ const ALLOWED_USERS = process.env.ALLOWED_USERS?.split(',').map(Number) || []
 const SHELL_SESSION_TITLE = '__telegram-shell__'
 
 const mainKb = Markup.keyboard([
-  ['💬 Chat', '🔄 Model'],
-  ['📡 Rejim', '📊 Status'],
+  ['💬 Chat', '💻 Code', '🖼 Vision'],
+  ['📚 Long', '🎯 Vibe', '📊 Status'],
   ['🗑 Clear', '❓ Help'],
 ]).resize()
 
 function auth(ctx, next) {
   if (ALLOWED_USERS.length && !ALLOWED_USERS.includes(ctx.from.id)) {
-    console.log(`⛔ Blocked access from user ${ctx.from.id} (@${ctx.from.username || 'no-username'})`)
+    console.log(`⛔ Blocked access from user ${ctx.from.id}`)
     return ctx.reply(
       '⛔ Ruxsat yo\'q\n\n'
         + `Sizning Telegram ID: ${ctx.from.id}\n`
@@ -26,6 +26,17 @@ function auth(ctx, next) {
 function formatDate(ts) {
   if (!ts) return '—'
   return new Date(ts).toLocaleString('uz-UZ')
+}
+
+function textContent(text) {
+  return [{ type: 'text', text }]
+}
+
+function imageContent(text, imageUrl) {
+  return [
+    { type: 'text', text },
+    { type: 'image_url', image_url: { url: imageUrl } },
+  ]
 }
 
 export function createBot(token, opencodePassword, goApiKey) {
@@ -75,41 +86,54 @@ export function createBot(token, opencodePassword, goApiKey) {
     return client.createSession(title)
   }
 
-  async function handleOnlineChat(ctx, text) {
-    const client = await checkOnline(ctx)
-    if (!client) return false
+  async function processChat(ctx, text, imageUrl) {
+    const mode = store.mode
+    const taskMode = store.taskMode
 
-    const statusMsg = await ctx.reply('⏳ AI javob bermoqda...')
-    try {
-      const session = await getOrCreateUserSession(client, ctx.from.id)
-      const reply = await client.sendPrompt(session.id, text)
-      await ctx.telegram.editMessageText(
-        ctx.chat.id, statusMsg.message_id, undefined,
-        reply || '✅ Bajarildi'
-      )
-    } catch (e) {
-      await ctx.telegram.editMessageText(
-        ctx.chat.id, statusMsg.message_id, undefined,
-        `❌ Xatolik: ${e.message}`
-      )
+    if (mode === 'online' && store.isOnline && !imageUrl) {
+      const client = await checkOnline(ctx)
+      if (client) {
+        try {
+          const statusMsg = await ctx.reply('⏳ ...')
+          const session = await getOrCreateUserSession(client, ctx.from.id)
+          const reply = await client.sendPrompt(session.id, text)
+          await ctx.telegram.editMessageText(
+            ctx.chat.id, statusMsg.message_id, undefined,
+            reply || '✅ Bajarildi'
+          )
+          return
+        } catch (e) {
+          await ctx.reply(`❌ ${e.message}`)
+          return
+        }
+      }
     }
-    return true
-  }
 
-  async function handleOfflineChat(ctx, text) {
-    const statusMsg = await ctx.reply('⏳ AI javob bermoqda...')
+    const statusMsg = await ctx.reply('⏳ ...')
     try {
+      const model = store.getModelName()
+      const systemPrompt = store.getSystemPrompt(ctx.from.id)
       const history = store.getUserHistory(ctx.from.id)
-      const messages = [
-        { role: 'system', content: 'Sen yordamchi AI. Uzbek tilida gaplash.' },
-        ...history,
-        { role: 'user', content: text },
-      ]
-      const modelName = store.getModelName()
-      const reply = await goClient.chat(modelName, messages)
 
-      store.addUserMessage(ctx.from.id, 'user', text)
-      store.addUserMessage(ctx.from.id, 'assistant', reply)
+      let userContent
+      if (imageUrl) {
+        userContent = imageContent(text || 'Bu rasmni tahlil qil', imageUrl)
+      } else {
+        userContent = textContent(text)
+      }
+
+      const messages = [
+        { role: 'system', content: systemPrompt },
+        ...history.filter(m => typeof m.content === 'string'),
+        { role: 'user', content: userContent },
+      ]
+
+      const reply = await goClient.chat(model, messages, { temperature: 0.9 })
+
+      if (!imageUrl) {
+        store.addUserMessage(ctx.from.id, 'user', text)
+        store.addUserMessage(ctx.from.id, 'assistant', reply)
+      }
 
       await ctx.telegram.editMessageText(
         ctx.chat.id, statusMsg.message_id, undefined,
@@ -121,172 +145,177 @@ export function createBot(token, opencodePassword, goApiKey) {
         `❌ Xatolik: ${e.message}`
       )
     }
-    return true
   }
 
-  async function handleChat(ctx, text) {
-    if (store.mode === 'online' && store.isOnline) {
-      return handleOnlineChat(ctx, text)
-    }
-    return handleOfflineChat(ctx, text)
+  function setTaskMode(ctx, mode) {
+    store.taskMode = mode
+    const info = store.getModelInfo()
+    const sysPrompt = store.getSystemPrompt(ctx.from.id)
+    store.resetUserPrompt(ctx.from.id)
+    return `🧠 ${info.label}\n📝 Rejim: ${mode}\n\n${sysPrompt}`
   }
 
   bot.start(async (ctx) => {
-    const modeLabel = store.mode === 'online' ? '✅ Online' : '💤 Offline'
-    const modelLabel = store.model === 'mimo' ? 'MiMo-V2.5 Free' : 'Nemotron 3 Ultra Free'
+    const info = store.getModelInfo()
     await ctx.reply(
-      '🤖 Opencode Telegram Bot\n\n'
-        + `📡 Rejim: ${modeLabel}\n`
-        + `🧠 Model: ${modelLabel}\n\n`
-        + 'Tugmalardan foydalaning 👇',
+      '🤖 WILD AI Bot\n\n'
+        + `🧠 ${info.label}\n`
+        + `📡 ${store.mode === 'online' ? '✅ Online' : '💤 Offline'}\n\n`
+        + 'Tugmalardan foydalaning 👇\n'
+        + 'Har qanday matn → AI ga ketadi',
       mainKb
     )
   })
 
   bot.hears('💬 Chat', async (ctx) => {
-    await ctx.reply('✍️ Matn yozing...', Markup.removeKeyboard())
-    await ctx.reply('AI ga yuborish uchun matn kiriting:', mainKb)
+    store.taskMode = 'chat'
+    store.resetUserPrompt(ctx.from.id)
+    await ctx.reply(setTaskMode(ctx, 'chat'), mainKb)
   })
 
-  bot.hears('🔄 Model', async (ctx) => {
-    const next = store.model === 'nemo' ? 'mimo' : 'nemo'
-    store.model = next
-    const label = next === 'mimo' ? 'MiMo-V2.5 Free' : 'Nemotron 3 Ultra Free'
-    await ctx.reply(`🧠 Model: ${label}`, mainKb)
+  bot.hears('💻 Code', async (ctx) => {
+    store.taskMode = 'code'
+    store.resetUserPrompt(ctx.from.id)
+    await ctx.reply(setTaskMode(ctx, 'code'), mainKb)
   })
 
-  bot.hears('📡 Rejim', async (ctx) => {
-    if (store.mode === 'online') {
-      store.mode = 'offline'
-      await ctx.reply('💤 Offline rejimga o\'tildi. AI chat orqali ishlaysiz.', mainKb)
-    } else {
-      if (!store.isOnline) {
-        return ctx.reply('💤 Kompyuter offline. Avval laptopni yoging.', mainKb)
-      }
-      store.mode = 'online'
-      await ctx.reply('✅ Online rejimga o\'tildi.', mainKb)
-    }
+  bot.hears('🖼 Vision', async (ctx) => {
+    store.taskMode = 'vision'
+    store.resetUserPrompt(ctx.from.id)
+    await ctx.reply(setTaskMode(ctx, 'vision') + '\n\nRasm yuboring, men tahlil qilaman.', mainKb)
+  })
+
+  bot.hears('📚 Long', async (ctx) => {
+    store.taskMode = 'long'
+    store.resetUserPrompt(ctx.from.id)
+    await ctx.reply(setTaskMode(ctx, 'long'), mainKb)
+  })
+
+  bot.hears('🎯 Vibe', async (ctx) => {
+    await ctx.reply(
+      '🎯 Vibe sozlamalari:\n\n'
+        + 'Yangi system prompt yozing yoki default ga qaytish uchun /reset_vibe',
+      mainKb
+    )
   })
 
   bot.hears('📊 Status', async (ctx) => {
-    const online = store.isOnline
-    const modeLabel = store.mode === 'online' ? '✅ Online' : '💤 Offline'
-    const modelLabel = store.model === 'mimo' ? 'MiMo-V2.5 Free' : 'Nemotron 3 Ultra Free'
+    const info = store.getModelInfo()
+    const taskMode = store.taskMode
     const lines = [
-      '🤖 Bot: ✅ ishlayapti',
-      `📡 Rejim: ${modeLabel}`,
-      `🧠 Model: ${modelLabel}`,
-      `💻 Kompyuter: ${online ? '✅ Online' : '💤 Offline'}`,
-      `🕐 Oxirgi ko\'rilgan: ${formatDate(store.lastSeen)}`,
+      '📊 Bot Status',
+      `🤖 Bot: ✅ ishlayapti`,
+      `🧠 Model: ${info.label}`,
+      `📝 Rejim: ${taskMode}`,
+      `📡 ${store.mode === 'online' ? '✅ Online' : '💤 Offline'}`,
+      `💻 Kompyuter: ${store.isOnline ? '✅ Online' : '💤 Offline'}`,
+      `🕐 Oxirgi: ${formatDate(store.lastSeen)}`,
     ]
-    if (online) {
-      const client = getClient()
-      if (client) {
-        const alive = await client.health()
-        lines.push(`🔗 Opencode serve: ${alive ? '✅' : '❌'}`)
-      }
-    }
     await ctx.reply(lines.join('\n'), mainKb)
   })
 
   bot.hears('🗑 Clear', async (ctx) => {
     store.clearUserHistory(ctx.from.id)
-    await ctx.reply('✅ Chat tarixi tozalandi.', mainKb)
+    await ctx.reply('✅ Tarix tozalandi.', mainKb)
   })
 
   bot.hears('❓ Help', async (ctx) => {
-    const lines = [
-      '📚 Yordam:\n',
-      '💬 Chat — AI ga matn yozish',
-      '🔄 Model — Nemotron / MiMo almashtirish',
-      '📡 Rejim — Online / Offline almashtirish',
-      '📊 Status — Bot va kompyuter holati',
-      '🗑 Clear — Chat tarixini tozalash\n',
-      '⌨️ Komandalar:',
-      '/chat <matn> — AI bilan suhbat',
-      '/clear — Tarixni tozalash',
-      '/onl — Online rejim',
-      '/ofl — Offline rejim',
-      '/mimo — MiMo-V2.5 Free',
-      '/nemo — Nemotron 3 Ultra Free',
-      '/status — Bot holati',
-    ]
-    await ctx.reply(lines.join('\n'), mainKb)
+    await ctx.reply(
+      '🤖 WILD AI Bot\n\n'
+        + '💬 Chat — Nemotron 3 Ultra: WILD suhbat\n'
+        + '💻 Code — North Mini Code: kod yozish\n'
+        + '🖼 Vision — MiMo V2.5: rasm tahlil\n'
+        + '📚 Long — Qwen3.6 Plus: katta kontekst\n'
+        + '🎯 Vibe — shaxsiy system prompt\n'
+        + '📊 Status — bot holati\n'
+        + '🗑 Clear — tarixni tozalash\n\n'
+        + 'Komandalar:\n'
+        + '/vibe <matn> — system prompt o\'zgartirish\n'
+        + '/reset_vibe — default prompt ga qaytish\n'
+        + '/onl — online rejim\n'
+        + '/ofl — offline rejim\n'
+        + '/status — bot holati',
+      mainKb
+    )
+  })
+
+  bot.command('vibe', async (ctx) => {
+    const text = ctx.payload.trim()
+    if (!text) return ctx.reply('Yozing: /vibe <sizning system prompt>', mainKb)
+    store.setUserPrompt(ctx.from.id, text)
+    await ctx.reply(`✅ Yangi vibe o\'rnatildi:\n\n${text}`, mainKb)
+  })
+
+  bot.command('reset_vibe', async (ctx) => {
+    store.resetUserPrompt(ctx.from.id)
+    const sys = store.getSystemPrompt(ctx.from.id)
+    await ctx.reply(`✅ Default vibe ga qaytildi:\n\n${sys}`, mainKb)
   })
 
   bot.command('status', async (ctx) => {
-    const online = store.isOnline
-    const modeLabel = store.mode === 'online' ? '✅ Online' : '💤 Offline'
-    const modelLabel = store.model === 'mimo' ? 'MiMo-V2.5 Free' : 'Nemotron 3 Ultra Free'
+    const info = store.getModelInfo()
     const lines = [
-      '🤖 Bot: ✅ ishlayapti',
-      `📡 Rejim: ${modeLabel}`,
-      `🧠 Model: ${modelLabel}`,
-      `💻 Kompyuter: ${online ? '✅ Online' : '💤 Offline'}`,
-      `🕐 Oxirgi ko\'rilgan: ${formatDate(store.lastSeen)}`,
+      '📊 Bot Status',
+      `🤖 Bot: ✅ ishlayapti`,
+      `🧠 Model: ${info.label}`,
+      `📝 Rejim: ${store.taskMode}`,
+      `📡 ${store.mode === 'online' ? '✅ Online' : '💤 Offline'}`,
+      `💻 Kompyuter: ${store.isOnline ? '✅ Online' : '💤 Offline'}`,
+      `🕐 Oxirgi: ${formatDate(store.lastSeen)}`,
     ]
-    if (online) {
-      const client = getClient()
-      if (client) {
-        const alive = await client.health()
-        lines.push(`🔗 Opencode serve: ${alive ? '✅' : '❌'}`)
-      }
-    }
     await ctx.reply(lines.join('\n'), mainKb)
   })
 
   bot.command('onl', async (ctx) => {
     if (!store.isOnline) {
-      return ctx.reply('💤 Kompyuter offline. Avval laptopni yoging.', mainKb)
+      return ctx.reply('💤 Kompyuter offline.', mainKb)
     }
     store.mode = 'online'
-    await ctx.reply('✅ Online rejimga o\'tildi.', mainKb)
+    await ctx.reply('✅ Online rejim', mainKb)
   })
 
   bot.command('ofl', async (ctx) => {
     store.mode = 'offline'
-    await ctx.reply('💤 Offline rejimga o\'tildi.', mainKb)
-  })
-
-  bot.command('mimo', async (ctx) => {
-    store.model = 'mimo'
-    await ctx.reply('🧠 Model: MiMo-V2.5 Free (vision + text)', mainKb)
-  })
-
-  bot.command('nemo', async (ctx) => {
-    store.model = 'nemo'
-    await ctx.reply('🧠 Model: Nemotron 3 Ultra Free (text)', mainKb)
+    await ctx.reply('💤 Offline rejim', mainKb)
   })
 
   bot.command('clear', async (ctx) => {
     store.clearUserHistory(ctx.from.id)
-    await ctx.reply('✅ Chat tarixi tozalandi.', mainKb)
+    await ctx.reply('✅ Tarix tozalandi.', mainKb)
   })
 
-  bot.command('chat', async (ctx) => {
-    const text = ctx.payload.trim()
-    if (!text) return ctx.reply('Matn kiriting: /chat <matn>', mainKb)
-    await handleChat(ctx, text)
+  bot.on('photo', async (ctx) => {
+    if (store.taskMode !== 'vision') {
+      store.taskMode = 'vision'
+      store.resetUserPrompt(ctx.from.id)
+      await ctx.reply('🖼 Vision rejimga o\'tildi', mainKb)
+    }
+    try {
+      const photo = ctx.message.photo.pop()
+      const link = await ctx.telegram.getFileLink(photo.file_id)
+      const caption = ctx.message.caption || 'Bu rasmni tahlil qil'
+      await processChat(ctx, caption, link.href)
+    } catch (e) {
+      await ctx.reply(`❌ ${e.message}`, mainKb)
+    }
   })
 
   bot.on('text', async (ctx) => {
     const text = ctx.message.text
     if (text.startsWith('/')) return
-    if (['💬 Chat', '🔄 Model', '📡 Rejim', '📊 Status', '🗑 Clear', '❓ Help'].includes(text)) return
-    await handleChat(ctx, text)
+    const buttons = ['💬 Chat', '💻 Code', '🖼 Vision', '📚 Long', '🎯 Vibe', '📊 Status', '🗑 Clear', '❓ Help']
+    if (buttons.includes(text)) return
+    await processChat(ctx, text)
   })
 
   bot.command('sessions', async (ctx) => {
     const client = await checkOnline(ctx)
     if (!client) return
-
     try {
       const sessions = await client.listSessions()
-      if (!sessions || sessions.length === 0) {
-        return ctx.reply('📭 Hech qanday session yo\'q.', mainKb)
-      }
+      if (!sessions || sessions.length === 0) return ctx.reply('📭 Session yo\'q.', mainKb)
       const maxShow = 15
-      const list = sessions.slice(0, maxShow).map((s) =>
+      const list = sessions.slice(0, maxShow).map(s =>
         `• ${s.title || 'nomsiz'} — \`${s.id}\``
       ).join('\n')
       await ctx.reply(
@@ -295,54 +324,45 @@ export function createBot(token, opencodePassword, goApiKey) {
         { parse_mode: 'Markdown' }
       )
     } catch (e) {
-      await ctx.reply(`❌ Xatolik: ${e.message}`, mainKb)
+      await ctx.reply(`❌ ${e.message}`, mainKb)
     }
   })
 
   bot.command('session', async (ctx) => {
     const id = ctx.payload.trim()
-    if (!id) return ctx.reply('Session ID kiriting: /session <id>', mainKb)
-
+    if (!id) return ctx.reply('/session <id>', mainKb)
     const client = await checkOnline(ctx)
     if (!client) return
-
     try {
       const s = await client.getSession(id)
       const msgs = await client.listMessages(id)
-      const msgCount = msgs?.length || 0
       await ctx.reply(
-        '📄 Session:\n'
-          + `🆔 \`${s.id}\`\n`
-          + `📌 ${s.title || 'nomsiz'}\n`
-          + `💬 Xabarlar: ${msgCount} ta\n`
-          + `📅 Yaratilgan: ${formatDate(s.created)}`,
+        `📄 Session: \`${s.id}\`\n📌 ${s.title || 'nomsiz'}\n💬 ${msgs?.length || 0} ta`,
         { parse_mode: 'Markdown' }
       )
     } catch (e) {
-      await ctx.reply(`❌ Xatolik: ${e.message}`, mainKb)
+      await ctx.reply(`❌ ${e.message}`, mainKb)
     }
   })
 
   bot.command('new', async (ctx) => {
     const prompt = ctx.payload.trim()
-    if (!prompt) return ctx.reply('Prompt kiriting: /new <prompt matni>', mainKb)
-
+    if (!prompt) return ctx.reply('/new <prompt>', mainKb)
     const client = await checkOnline(ctx)
     if (!client) return
-
-    const statusMsg = await ctx.reply('⏳ Yangi session yaratilmoqda...')
+    const statusMsg = await ctx.reply('⏳ ...')
     try {
       const session = await client.createSession(prompt.slice(0, 80))
       const reply = await client.sendPrompt(session.id, prompt)
       await ctx.telegram.editMessageText(
         ctx.chat.id, statusMsg.message_id, undefined,
-        `✅ Yaratildi: \`${session.id}\`\n\n${reply || 'Javob yo\'q'}`,
+        `✅ \`${session.id}\`\n\n${reply || ''}`,
         { parse_mode: 'Markdown' }
       )
     } catch (e) {
       await ctx.telegram.editMessageText(
         ctx.chat.id, statusMsg.message_id, undefined,
-        `❌ Xatolik: ${e.message}`
+        `❌ ${e.message}`
       )
     }
   })
@@ -350,44 +370,39 @@ export function createBot(token, opencodePassword, goApiKey) {
   bot.command('prompt', async (ctx) => {
     const text = ctx.payload.trim()
     const space = text.indexOf(' ')
-    if (space === -1) return ctx.reply('Format: /prompt <session_id> <xabar>', mainKb)
-
+    if (space === -1) return ctx.reply('/prompt <id> <matn>', mainKb)
     const id = text.slice(0, space).trim()
     const message = text.slice(space + 1).trim()
-    if (!id || !message) return ctx.reply('Format: /prompt <session_id> <xabar>', mainKb)
-
+    if (!id || !message) return ctx.reply('/prompt <id> <matn>', mainKb)
     const client = await checkOnline(ctx)
     if (!client) return
-
-    const statusMsg = await ctx.reply('⏳ Javob kutilmoqda...')
+    const statusMsg = await ctx.reply('⏳ ...')
     try {
       const reply = await client.sendPrompt(id, message)
       await ctx.telegram.editMessageText(
         ctx.chat.id, statusMsg.message_id, undefined,
-        reply || '✅ Bajarildi',
+        reply || '✅'
       )
     } catch (e) {
       await ctx.telegram.editMessageText(
         ctx.chat.id, statusMsg.message_id, undefined,
-        `❌ Xatolik: ${e.message}`
+        `❌ ${e.message}`
       )
     }
   })
 
   bot.command('shell', async (ctx) => {
     const command = ctx.payload.trim()
-    if (!command) return ctx.reply('Komanda kiriting: /shell <komanda>', mainKb)
-
+    if (!command) return ctx.reply('/shell <komanda>', mainKb)
     const client = await checkOnline(ctx)
     if (!client) return
-
-    const statusMsg = await ctx.reply('⏳ Bajarilmoqda...')
+    const statusMsg = await ctx.reply('⏳ ...')
     try {
       const shellId = await getShellSessionId(client)
       const output = await client.runShell(shellId, command)
-      const text = output || '✅ Bajarildi (chiqish yo\'q)'
+      const text = output || '✅'
       const truncated = text.length > 4000
-        ? text.slice(0, 4000) + '\n\n... (davomi kesildi)'
+        ? text.slice(0, 4000) + '\n\n...'
         : text
       await ctx.telegram.editMessageText(
         ctx.chat.id, statusMsg.message_id, undefined,
@@ -396,23 +411,21 @@ export function createBot(token, opencodePassword, goApiKey) {
     } catch (e) {
       await ctx.telegram.editMessageText(
         ctx.chat.id, statusMsg.message_id, undefined,
-        `❌ Xatolik: ${e.message}`
+        `❌ ${e.message}`
       )
     }
   })
 
   bot.command('del', async (ctx) => {
     const id = ctx.payload.trim()
-    if (!id) return ctx.reply('Session ID kiriting: /del <id>', mainKb)
-
+    if (!id) return ctx.reply('/del <id>', mainKb)
     const client = await checkOnline(ctx)
     if (!client) return
-
     try {
       await client.deleteSession(id)
-      await ctx.reply(`✅ O'chirildi: \`${id}\``, { parse_mode: 'Markdown' })
+      await ctx.reply(`✅ \`${id}\``, { parse_mode: 'Markdown' })
     } catch (e) {
-      await ctx.reply(`❌ Xatolik: ${e.message}`, mainKb)
+      await ctx.reply(`❌ ${e.message}`, mainKb)
     }
   })
 

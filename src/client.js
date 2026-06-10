@@ -76,22 +76,26 @@ export function createGoClient(apiKey) {
   const BASE = 'https://opencode.ai/zen/v1'
 
   return {
-    async chat(model, messages) {
+    async chat(model, messages, options = {}) {
+      const body = {
+        model,
+        messages,
+        stream: false,
+      }
+      if (options.temperature !== undefined) body.temperature = options.temperature
+      if (options.maxTokens !== undefined) body.max_tokens = options.maxTokens
+
       const res = await fetch(`${BASE}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
         },
-        body: JSON.stringify({
-          model,
-          messages,
-          stream: false,
-        }),
+        body: JSON.stringify(body),
       })
       if (!res.ok) {
         const text = await res.text().catch(() => '')
-        throw new Error(`Go API ${res.status}: ${text.slice(0, 300)}`)
+        throw new Error(`Zen API ${res.status}: ${text.slice(0, 300)}`)
       }
       const data = await res.json()
       return data.choices?.[0]?.message?.content || ''
