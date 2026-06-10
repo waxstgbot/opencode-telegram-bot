@@ -11,6 +11,7 @@ const defaults = {
   mode: 'offline',
   model: 'nemo',
   taskMode: 'chat',
+  genService: 'pollinations',
   userPrompts: {},
   chatHistory: {},
 }
@@ -63,6 +64,9 @@ export const store = {
   get taskMode() { return data.taskMode || 'chat' },
   set taskMode(v) { data.taskMode = v; save() },
 
+  get genService() { return data.genService || 'pollinations' },
+  set genService(v) { data.genService = v; save() },
+
   get isOnline() {
     if (!data.lastSeen || !data.tunnelUrl) return false
     return Date.now() - data.lastSeen < 120_000
@@ -74,10 +78,6 @@ export const store = {
 
   getModelName() {
     return this.getModelInfo().id
-  },
-
-  getModelLabel() {
-    return this.getModelInfo().label
   },
 
   getSystemPrompt(userId) {

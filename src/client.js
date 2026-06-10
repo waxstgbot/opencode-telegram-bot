@@ -1,3 +1,5 @@
+import { randomBytes } from 'crypto'
+
 export function createClient(baseUrl, password) {
   const auth = password
     ? 'Basic ' + Buffer.from(`opencode:${password}`).toString('base64')
@@ -99,6 +101,54 @@ export function createGoClient(apiKey) {
       }
       const data = await res.json()
       return data.choices?.[0]?.message?.content || ''
+    },
+  }
+}
+
+export function createGenClient() {
+  return {
+    async pollinations(prompt) {
+      const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true&seed=${Math.floor(Math.random() * 100000)}`
+      const res = await fetch(url)
+      if (!res.ok) throw new Error(`Pollinations ${res.status}`)
+      const buf = Buffer.from(await res.arrayBuffer())
+      return buf
+    },
+
+    async huggingFace(prompt, apiKey) {
+      const res = await fetch('https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ inputs: prompt }),
+      })
+      if (!res.ok) {
+        const text = await res.text().catch(() => '')
+        throw new Error(`HuggingFace ${res.status}: ${text.slice(0, 200)}`)
+      }
+      return Buffer.from(await res.arrayBuffer())
+    },
+
+    async stability(prompt, apiKey) {
+      const form = new FormData()
+      form.append('prompt', prompt)
+      form.append('output_format', 'png')
+      form.append('style_preset', 'digital-art')
+      const res = await fetch('https://api.stability.ai/v2beta/stable-image/generate/sd3', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Accept': 'image/*',
+        },
+        body: form,
+      })
+      if (!res.ok) {
+        const text = await res.text().catch(() => '')
+        throw new Error(`Stability ${res.status}: ${text.slice(0, 200)}`)
+      }
+      return Buffer.from(await res.arrayBuffer())
     },
   }
 }
