@@ -1,8 +1,8 @@
-name: Keep Alive 1
+name: Keep Alive 2
 
 on:
   schedule:
-    - cron: '9,19,29,39,49,59 * * * *'
+    - cron: '4,14,24,34,44,54 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -12,7 +12,7 @@ jobs:
       matrix:
         url:
           - https://opencode-telegram-bot.onrender.com
-          - https://opencode-telegram-bot.onrender.com/ping?source=gha1
+          - https://opencode-telegram-bot.onrender.com/ping?source=gha2
     steps:
       - name: Ping with retry
         run: |

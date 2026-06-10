@@ -55,6 +55,18 @@ function startWeatherCron(botInstance) {
   }, 180000)
 }
 
+function startSelfKeepAlive() {
+  const SELF_URL = process.env.RENDER_EXTERNAL_URL || 'https://opencode-telegram-bot.onrender.com'
+  setInterval(async () => {
+    try {
+      const res = await fetch(SELF_URL, { signal: AbortSignal.timeout(10000) })
+      console.log(`🔁 Self-ping: ${res.status}`)
+    } catch (e) {
+      console.log(`🔁 Self-ping failed: ${e.message}`)
+    }
+  }, 480_000)
+}
+
 const app = express()
 app.use(express.json())
 
@@ -92,6 +104,7 @@ const server = app.listen(PORT, () => {
 bot.launch().then(() => {
   console.log('🤖 Telegram bot started')
   startWeatherCron(bot)
+  startSelfKeepAlive()
 }).catch(err => {
   console.error('Bot failed:', err)
   process.exit(1)
