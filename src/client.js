@@ -71,3 +71,30 @@ export function createClient(baseUrl, password) {
     },
   }
 }
+
+export function createGoClient(apiKey) {
+  const BASE = 'https://opencode.ai/zen/go/v1'
+
+  return {
+    async chat(model, messages) {
+      const res = await fetch(`${BASE}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          stream: false,
+        }),
+      })
+      if (!res.ok) {
+        const text = await res.text().catch(() => '')
+        throw new Error(`Go API ${res.status}: ${text.slice(0, 300)}`)
+      }
+      const data = await res.json()
+      return data.choices?.[0]?.message?.content || ''
+    },
+  }
+}

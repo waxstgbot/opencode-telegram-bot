@@ -8,13 +8,19 @@ const botToken = process.env.BOT_TOKEN
 const allowedUsers = (process.env.ALLOWED_USERS || '').split(',').map(Number)
 const registerSecret = process.env.REGISTER_SECRET
 const opencodePassword = process.env.OPENCODE_SERVER_PASSWORD || ''
+const goApiKey = process.env.OPENCODE_GO_KEY || ''
 
 if (!botToken) {
   console.error('BOT_TOKEN env variable required')
   process.exit(1)
 }
 
-const bot = createBot(botToken, opencodePassword)
+if (!goApiKey) {
+  console.error('OPENCODE_GO_KEY env variable required')
+  process.exit(1)
+}
+
+const bot = createBot(botToken, opencodePassword, goApiKey)
 
 const app = express()
 app.use(express.json())
