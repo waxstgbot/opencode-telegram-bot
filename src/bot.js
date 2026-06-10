@@ -1,17 +1,27 @@
 import { Telegraf, Markup } from 'telegraf'
-import { createGoClient, fetchWeather, fetchWeatherByCoords, fetchUrlText, webSearch } from './client.js'
+import { createClient, createGoClient, fetchWeather, fetchWeatherByCoords, fetchUrlText, webSearch } from './client.js'
 import { store } from './store.js'
 
 const ALLOWED_USERS_RAW = process.env.ALLOWED_USERS || '5461818003,1133984065'
 const ALLOWED_USERS = ALLOWED_USERS_RAW.split(',').map(Number)
 
-const mainKb = Markup.keyboard([
+const offlineKb = Markup.keyboard([
   ['💬 Chat', '💻 Code'],
   ['🖼 Vision', '📚 Long'],
   ['🌤 Weather', '⚡ Agent'],
   ['🗑 Clear', '📊 Status'],
   ['❓ Help'],
 ]).resize()
+
+const onlineKb = Markup.keyboard([
+  ['💬 Chat', '💻 Code'],
+  ['🖼 Vision', '📚 Long'],
+  ['🌤 Weather', '⚡ Agent'],
+  ['▶️ Run', '🗑 Clear'],
+  ['📊 Status', '❓ Help'],
+]).resize()
+
+let mainKb = offlineKb
 
 const URL_REGEX = /https?:\/\/[^\s]+/g
 
@@ -28,11 +38,22 @@ function auth(ctx, next) {
   return next()
 }
 
-export function createBot(token, goApiKey) {
+export function createBot(token, goApiKey, opencodePassword) {
   const bot = new Telegraf(token)
   bot.use(auth)
 
   const goClient = createGoClient(goApiKey)
+
+  function getTunnelClient() {
+    const url = store.tunnelUrl
+    if (!url) return null
+    return createClient(url, opencodePassword)
+  }
+
+  function updateKb() {
+    mainKb = store.mode === 'online' && store.isOnline ? onlineKb : offlineKb
+    return mainKb
+  }
 
   async function zenChat(model, messages, opts) {
     return goClient.chat(model, messages, opts)
@@ -100,6 +121,7 @@ export function createBot(token, goApiKey) {
   }
 
   bot.start(async (ctx) => {
+    updateKb()
     const info = store.getModelInfo()
     await ctx.reply(
       '╔══════════════════════╗\n'
@@ -150,8 +172,8 @@ export function createBot(token, goApiKey) {
       try {
         const w = await fetchWeatherByCoords(loc.lat, loc.lon)
         await ctx.reply(`🌤 *${loc.name || 'Sizning joy'}*\n\n${w}\n\n🔄 Yangilash uchun location yuboring\n🏙 Shahar nomini yozing`, { ...mainKb, parse_mode: 'Markdown' })
-      } catch (e) {
-        await ctx.reply(`🌤 Ob-havo\n\nLocation yuboring yoki shahar nomini yozing`, mainKb)
+      } catch {
+        await ctx.reply('🌤 Ob-havo\n\nLocation yuboring yoki shahar nomini yozing', mainKb)
       }
     } else {
       await ctx.reply('🌤 *Ob-havo*\n\n📍 Location yuboring yoki\n🏙 Shahar nomini yozing\n\nMisol: Toshkent, London', { ...mainKb, parse_mode: 'Markdown' })
@@ -163,10 +185,26 @@ export function createBot(token, goApiKey) {
     store.resetUserPrompt(ctx.from.id)
     await ctx.reply(
       '⚡ *Agent* | Super AI Agent\n\n'
-      + 'Inson darajasidagi dasturchi. Istalgan kodni yozadi.\n'
+      + 'Istalgan soha bo\'yicha eng yuqori darajadagi mutaxassis.\n'
+      + 'Coder, advokat, biznesmen — berilgan vazifaning eng ustasi.\n'
       + 'Hech qanday cheklov, senzura yo\'q.\n\n'
       + '/agent <matn> — shaxsiy system prompt yozish\n'
       + '/reset_agent — default ga qaytish',
+      { ...mainKb, parse_mode: 'Markdown' }
+    )
+  })
+
+  bot.hears('▶️ Run', async (ctx) => {
+    if (store.mode !== 'online' || !store.isOnline) {
+      return ctx.reply('💤 *Run* faqat Online rejimda ishlaydi. /onl', { ...mainKb, parse_mode: 'Markdown' })
+    }
+    await ctx.reply(
+      '▶️ *Run* — kod bajarish\n\n'
+      + 'Format: `/run <til> <kod>`\n\n'
+      + 'Misol: `/run python print("salom")`\n'
+      + 'Misol: `/run js console.log(2+2)`\n'
+      + 'Misol: `/run bash echo "test"`\n\n'
+      + 'Qo\'llab-quvvatlanadi: python, js, cpp, rust, go, php, ruby, bash, java va 50+ til',
       { ...mainKb, parse_mode: 'Markdown' }
     )
   })
@@ -200,7 +238,8 @@ export function createBot(token, goApiKey) {
       + '🖼 *Vision* — MiMo V2.5 (rasm tahlil)\n'
       + '📚 *Long* — Qwen3.6 Plus (katta kontekst)\n'
       + '🌤 *Weather* — ob-havo (location/shar)\n'
-      + '⚡ *Agent* — Super AI Agent (kod + har qanday vazifa)\n'
+      + '⚡ *Agent* — Super AI Agent (istalgan soha bo\'yicha mutaxassis)\n'
+      + '▶️ *Run* — kod bajarish (faqat Online)\n'
       + '📊 *Status* — bot holati\n'
       + '🗑 *Clear* — tarixni tozalash\n\n'
       + '🔗 URL yuboring → bot o\'qib beradi\n'
@@ -222,14 +261,56 @@ export function createBot(token, goApiKey) {
     await ctx.reply('✅ Default agent ga qaytildi', mainKb)
   })
 
+  bot.command('run', async (ctx) => {
+    if (store.mode !== 'online' || !store.isOnline) {
+      return ctx.reply('💤 *Run* faqat Online rejimda ishlaydi. /onl', { ...mainKb, parse_mode: 'Markdown' })
+    }
+
+    const payload = ctx.payload.trim()
+    const sep = payload.indexOf(' ')
+    if (sep === -1) {
+      return ctx.reply('Format: `/run <til> <kod>`\nMisol: `/run python print("salom")`', { ...mainKb, parse_mode: 'Markdown' })
+    }
+
+    const language = payload.slice(0, sep).trim().toLowerCase()
+    const code = payload.slice(sep + 1).trim()
+    if (!language || !code) {
+      return ctx.reply('Format: `/run <til> <kod>`', { ...mainKb, parse_mode: 'Markdown' })
+    }
+
+    const client = getTunnelClient()
+    if (!client) return ctx.reply('❌ Tunnel yo\'q', mainKb)
+    if (!await client.health()) return ctx.reply('⚠️ Opencode serve javob bermayapti', mainKb)
+
+    const langMap = { py: 'python3', js: 'node', javascript: 'node', cpp: 'g++', cs: 'csc', rb: 'ruby', rs: 'rustc', sh: 'bash', bash: 'bash' }
+    const runner = langMap[language] || language
+
+    const statusMsg = await ctx.reply(`⏳ ${language} da bajarilmoqda...`)
+    try {
+      const escCode = code.replace(/RUNEND/g, 'RUNEND2')
+      const shellCmd = `${runner} << 'RUNEND'\n${escCode}\nRUNEND`
+      const sessions = await client.listSessions()
+      let shellId = sessions?.find(s => s.title === '__telegram-shell__')?.id
+      if (!shellId) shellId = (await client.createSession('__telegram-shell__')).id
+      const output = await client.runShell(shellId, shellCmd)
+      const maxLen = 4000
+      const text = `▶️ *${language}*\n\`\`\`${language}\n${code.slice(0, 500)}\n\`\`\`\n\n📤 *Natija:*\n\`\`\`\n${(output || '✅').slice(0, maxLen)}\n\`\`\``
+      await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, text, { parse_mode: 'Markdown' })
+    } catch (e) {
+      await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, `❌ ${e.message}`)
+    }
+  })
+
   bot.command('onl', async (ctx) => {
     if (!store.isOnline) return ctx.reply('💤 Kompyuter offline', mainKb)
     store.mode = 'online'
-    await ctx.reply('✅ Online rejim', mainKb)
+    updateKb()
+    await ctx.reply('✅ *Online* rejim faollashtirildi\n\n▶️ Run — kod bajarish', { ...mainKb, parse_mode: 'Markdown' })
   })
 
   bot.command('ofl', async (ctx) => {
     store.mode = 'offline'
+    updateKb()
     await ctx.reply('💤 Offline rejim', mainKb)
   })
 
@@ -245,7 +326,7 @@ export function createBot(token, goApiKey) {
     try {
       const w = await fetchWeatherByCoords(latitude, longitude)
       await ctx.reply(`🌤 *Sizning joyingiz*\n\n${w}`, { ...mainKb, parse_mode: 'Markdown' })
-    } catch (e) {
+    } catch {
       await ctx.reply(`📍 Joylashuv saqlandi (${latitude}, ${longitude})`, mainKb)
     }
 
@@ -270,7 +351,7 @@ export function createBot(token, goApiKey) {
   bot.on('text', async (ctx) => {
     const text = ctx.message.text.trim()
     if (text.startsWith('/')) return
-    const buttons = ['💬 Chat', '💻 Code', '🖼 Vision', '📚 Long', '🌤 Weather', '⚡ Agent', '📊 Status', '🗑 Clear', '❓ Help']
+    const buttons = ['💬 Chat', '💻 Code', '🖼 Vision', '📚 Long', '🌤 Weather', '⚡ Agent', '▶️ Run', '📊 Status', '🗑 Clear', '❓ Help']
     if (buttons.includes(text)) return
 
     const mode = store.taskMode
@@ -279,10 +360,9 @@ export function createBot(token, goApiKey) {
       const urls = text.match(URL_REGEX)
       if (urls) return processChat(ctx, text)
 
-      let w, city = text
       if (text.includes(',') && !isNaN(text.split(',')[0]) && !isNaN(text.split(',')[1])) {
         const [lat, lon] = text.split(',').map(Number)
-        w = await fetchWeatherByCoords(lat, lon).catch(() => null)
+        const w = await fetchWeatherByCoords(lat, lon).catch(() => null)
         if (w) {
           store.setUserLocation(ctx.from.id, { lat, lon, name: `${lat},${lon}` })
           return ctx.reply(`🌤 *${lat},${lon}*\n\n${w}`, { ...mainKb, parse_mode: 'Markdown' })
@@ -290,11 +370,11 @@ export function createBot(token, goApiKey) {
       }
 
       try {
-        w = await fetchWeather(text)
+        const w = await fetchWeather(text)
         store.setUserLocation(ctx.from.id, { lat: 0, lon: 0, name: text })
         await ctx.reply(`🌤 *${text}*\n\n${w}`, { ...mainKb, parse_mode: 'Markdown' })
       } catch {
-        await ctx.reply(`❌ Ob-havo olinmadi. Shahar nomini to'g'ri yozing yoki location yuboring.`, mainKb)
+        await ctx.reply('❌ Ob-havo olinmadi. Shahar nomini to\'g\'ri yozing yoki location yuboring.', mainKb)
       }
       return
     }
