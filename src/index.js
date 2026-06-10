@@ -20,6 +20,9 @@ if (!botToken) {
   process.exit(1)
 }
 
+console.log(`🔑 Zen API: ${goApiKey ? 'loaded' : 'missing'}`)
+console.log(`🔑 Groq API: ${groqApiKey ? 'loaded (' + groqApiKey.slice(0, 10) + '...)' : 'missing'}`)
+
 const bot = createBot(botToken, goApiKey, groqApiKey, opencodePassword)
 
 const sentWeather = new Set()

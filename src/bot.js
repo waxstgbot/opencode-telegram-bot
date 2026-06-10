@@ -70,9 +70,13 @@ export function createBot(token, goApiKey, groqApiKey, opencodePassword) {
     if (groqClient && !skipGroq) {
       for (const gm of [groqFast, groqFallback]) {
         try {
-          return await groqClient.chat(gm, messages, opts)
+          console.log(`🚀 Groq trying: ${gm}`)
+          const r = await groqClient.chat(gm, messages, opts)
+          console.log(`✅ Groq OK: ${gm}`)
+          return r
         } catch (e) {
           errs.push(`Groq-${gm.split('-')[1] || gm}: ${e.message}`)
+          console.error(`❌ Groq fail ${gm}: ${e.message}`)
           if (e.status !== 429) break
         }
       }
