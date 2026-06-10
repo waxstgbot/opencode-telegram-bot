@@ -73,7 +73,7 @@ export function createClient(baseUrl, password) {
 }
 
 export function createGoClient(apiKey) {
-  const BASE = 'https://opencode.ai/zen/go/v1'
+  const BASE = 'https://opencode.ai/zen/v1'
 
   return {
     async chat(model, messages) {

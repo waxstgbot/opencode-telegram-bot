@@ -50,7 +50,7 @@ export const store = {
   },
 
   getModelName() {
-    return data.model === 'mimo' ? 'mimo-v2.5' : 'deepseek-v4-flash'
+    return data.model === 'mimo' ? 'mimo-v2.5-free' : 'nemotron-3-ultra-free'
   },
 
   getUserHistory(userId) {

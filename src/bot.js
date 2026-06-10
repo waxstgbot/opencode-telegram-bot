@@ -127,7 +127,7 @@ export function createBot(token, opencodePassword, goApiKey) {
 
   bot.start(async (ctx) => {
     const modeLabel = store.mode === 'online' ? '✅ Online' : '💤 Offline'
-    const modelLabel = store.model === 'mimo' ? 'MiMo-V2.5' : 'DeepSeek V4 Flash'
+    const modelLabel = store.model === 'mimo' ? 'MiMo-V2.5 Free' : 'Nemotron 3 Ultra Free'
     const online = store.isOnline
     await ctx.reply(
       '🤖 Opencode Telegram Bot\n\n'
@@ -140,7 +140,7 @@ export function createBot(token, opencodePassword, goApiKey) {
         + '/onl — Online rejim\n'
         + '/ofl — Offline rejim\n'
         + '/mimo — MiMo-V2.5 modeli\n'
-        + '/nemo — DeepSeek V4 Flash modeli\n'
+        + '/nemo — Nemotron 3 Ultra Free modeli\n'
         + '/status — Bot holati\n'
         + '/help — Yordam'
     )
@@ -153,8 +153,8 @@ export function createBot(token, opencodePassword, goApiKey) {
       '/clear — Chat tarixini tozalash',
       '/onl — Online rejimga o\'tish',
       '/ofl — Offline rejimga o\'tish',
-      '/mimo — MiMo-V2.5 modeli (vision)',
-      '/nemo — DeepSeek V4 Flash modeli (chat)',
+      '/mimo — MiMo-V2.5 Free modeli (vision)',
+      '/nemo — Nemotron 3 Ultra Free modeli (chat)',
       '/status — Bot va kompyuter holati\n',
     ]
     if (store.mode === 'online') {
@@ -174,7 +174,7 @@ export function createBot(token, opencodePassword, goApiKey) {
   bot.command('status', async (ctx) => {
     const online = store.isOnline
     const modeLabel = store.mode === 'online' ? '✅ Online' : '💤 Offline'
-    const modelLabel = store.model === 'mimo' ? 'MiMo-V2.5' : 'DeepSeek V4 Flash'
+    const modelLabel = store.model === 'mimo' ? 'MiMo-V2.5 Free' : 'Nemotron 3 Ultra Free'
     const lines = [
       '🤖 Bot: ✅ ishlayapti',
       `📡 Rejim: ${modeLabel}`,
@@ -207,12 +207,12 @@ export function createBot(token, opencodePassword, goApiKey) {
 
   bot.command('mimo', async (ctx) => {
     store.model = 'mimo'
-    await ctx.reply('🧠 Model: MiMo-V2.5 (vision + text)')
+    await ctx.reply('🧠 Model: MiMo-V2.5 Free (vision + text)')
   })
 
   bot.command('nemo', async (ctx) => {
     store.model = 'nemo'
-    await ctx.reply('🧠 Model: DeepSeek V4 Flash (text)')
+    await ctx.reply('🧠 Model: Nemotron 3 Ultra Free (text)')
   })
 
   bot.command('clear', async (ctx) => {
