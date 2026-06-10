@@ -48,9 +48,9 @@ export function createGoClient(apiKey) {
         model,
         messages,
         stream: false,
+        max_tokens: options.maxTokens || 800,
       }
       if (options.temperature !== undefined) body.temperature = options.temperature
-      if (options.maxTokens !== undefined) body.max_tokens = options.maxTokens
 
       const res = await fetch(`${BASE}/chat/completions`, {
         method: 'POST',
@@ -59,6 +59,7 @@ export function createGoClient(apiKey) {
           'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify(body),
+        signal: AbortSignal.timeout(25000),
       })
       if (!res.ok) {
         const text = await res.text().catch(() => '')
@@ -104,7 +105,7 @@ export async function webSearch(query) {
 
   const tryFetch = async (url, parser) => {
     try {
-      const res = await ft(url, 4000)
+      const res = await ft(url, 3000)
       if (res.ok) parser(await res.json())
     } catch {}
   }
@@ -132,8 +133,7 @@ export async function webSearch(query) {
     }
   )
 
-  await Promise.race([ddgPromise, wikiPromise])
-  if (parts.length === 0) await Promise.all([ddgPromise, wikiPromise])
+  await Promise.all([ddgPromise, wikiPromise])
 
   return parts.length > 0 ? parts.slice(0, 4).join('\n\n') : null
 }
