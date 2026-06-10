@@ -105,14 +105,30 @@ export function createGoClient(apiKey) {
   }
 }
 
+async function retry(fn, maxRetries = 3, delay = 3000) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn()
+    } catch (e) {
+      if (i === maxRetries - 1) throw e
+      await new Promise(r => setTimeout(r, delay * (i + 1)))
+    }
+  }
+}
+
 export function createGenClient() {
   return {
     async pollinations(prompt) {
-      const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true&seed=${Math.floor(Math.random() * 100000)}`
-      const res = await fetch(url)
-      if (!res.ok) throw new Error(`Pollinations ${res.status}`)
-      const buf = Buffer.from(await res.arrayBuffer())
-      return buf
+      return retry(async () => {
+        const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true&seed=${Math.floor(Math.random() * 100000)}`
+        const controller = new AbortController()
+        const timer = setTimeout(() => controller.abort(), 60000)
+        const res = await fetch(url, { signal: controller.signal })
+        clearTimeout(timer)
+        if (res.status === 402) throw new Error('Pollinations band (IP da 1 ta queue). 3 soniyada qayta uriniladi...')
+        if (!res.ok) throw new Error(`Pollinations ${res.status}`)
+        return Buffer.from(await res.arrayBuffer())
+      })
     },
 
     async huggingFace(prompt, apiKey) {
@@ -135,7 +151,6 @@ export function createGenClient() {
       const form = new FormData()
       form.append('prompt', prompt)
       form.append('output_format', 'png')
-      form.append('style_preset', 'digital-art')
       const res = await fetch('https://api.stability.ai/v2beta/stable-image/generate/sd3', {
         method: 'POST',
         headers: {
