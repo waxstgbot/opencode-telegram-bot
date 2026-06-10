@@ -1,5 +1,5 @@
 import { Telegraf, Markup } from 'telegraf'
-import { createClient, createGoClient, fetchWeather, fetchWeatherByCoords, fetchUrlText, webSearch } from './client.js'
+import { createClient, createGoClient, fetchWeather, fetchWeatherByCoords, fetchUrlText, fetchDocumentText, webSearch } from './client.js'
 import { store } from './store.js'
 
 const ALLOWED_USERS_RAW = process.env.ALLOWED_USERS || '5461818003,1133984065'
@@ -65,7 +65,7 @@ export function createBot(token, goApiKey, opencodePassword) {
     return goClient.chat(model, messages, opts)
   }
 
-  async function processChat(ctx, text, imageUrl) {
+  async function processChat(ctx, text, imageUrl, docText) {
     const model = store.getModelName()
     const mode = store.taskMode
     const systemPrompt = store.getSystemPrompt(ctx.from.id)
@@ -93,9 +93,10 @@ export function createBot(token, goApiKey, opencodePassword) {
       }
 
       const today = new Date().toISOString().split('T')[0]
-      let contextMsg = `Bugungi sana: ${today}. Javob berishda faqat web qidiruv natijalarini ishlat, o\'z bilimingni ishlatma.`
 
-      if (urls && urls.length > 0) {
+      if (docText) {
+        extraContext = 'Hujjat kontenti (ASOSIY MANBA — shu ma\'lumotlarni ishlat):\n' + docText
+      } else if (urls && urls.length > 0) {
         extraContext = 'Web sahifa kontenti (ASOSIY MANBA):\n'
         for (const url of urls.slice(0, 2)) {
           try {
@@ -116,9 +117,9 @@ export function createBot(token, goApiKey, opencodePassword) {
 
       const messages = [{ role: 'system', content: systemPrompt }]
       if (extraContext) {
-        messages.push({ role: 'system', content: contextMsg + '\n\n' + extraContext })
+        messages.push({ role: 'system', content: `Bugungi sana: ${today}.` + '\n\n' + extraContext })
       } else {
-        messages.push({ role: 'system', content: contextMsg })
+        messages.push({ role: 'system', content: `Bugungi sana: ${today}. Javob berishda faqat web qidiruv natijalarini ishlat, o'z bilimingni ishlatma.` })
       }
       messages.push(...history.filter(m => typeof m.content === 'string'))
 
@@ -384,6 +385,29 @@ export function createBot(token, goApiKey, opencodePassword) {
       await processChat(ctx, caption, link.href)
     } catch (e) {
       await ctx.reply(`❌ ${e.message}`, mainKb)
+    }
+  })
+
+  bot.on('document', async (ctx) => {
+    const doc = ctx.message.document
+    const supportedMimes = ['application/pdf', 'text/plain', 'text/html', 'application/json', 'text/csv']
+    const isText = doc.mime_type && supportedMimes.includes(doc.mime_type)
+    const isPdf = doc.mime_type === 'application/pdf' || doc.file_name?.endsWith('.pdf')
+
+    if (!isText && !isPdf) {
+      return ctx.reply(`❌ Qo'llab-quvvatlanmaydigan fayl: ${doc.mime_type || doc.file_name}\n\nFaqat: PDF, TXT, HTML, JSON, CSV`, mainKb)
+    }
+
+    const statusMsg = await ctx.reply('⏳ Fayl o\'qilmoqda...')
+    try {
+      const link = await ctx.telegram.getFileLink(doc.file_id)
+      const docText = await fetchDocumentText(link.href, doc.mime_type)
+      const caption = ctx.message.caption || 'Bu faylni tahlil qil'
+
+      store.taskMode = 'chat'
+      await processChat(ctx, caption, null, docText)
+    } catch (e) {
+      await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, `❌ ${e.message}`.slice(0, MAX_MSG)).catch(() => {})
     }
   })
 

@@ -58,8 +58,7 @@ export function createGoClient(apiKey) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
         },
-        body: JSON.stringify(body),
-        signal: AbortSignal.timeout(45000),
+        signal: AbortSignal.timeout(60000),
       })
       if (!res.ok) {
         const text = await res.text().catch(() => '')
@@ -85,6 +84,19 @@ export async function fetchWeather(city) {
 export async function fetchWeatherByCoords(lat, lon) {
   const res = await ft(`https://wttr.in/${lat},${lon}?format=%C+%t+%w+%h&m`, 8000)
   return (await res.text()).trim()
+}
+
+export async function fetchDocumentText(url, mime) {
+  const res = await ft(url, 15000)
+  const buf = Buffer.from(await res.arrayBuffer())
+
+  if (mime === 'application/pdf' || url.endsWith('.pdf')) {
+    const pdfParse = (await import('pdf-parse')).default
+    const data = await pdfParse(buf)
+    return data.text.slice(0, 8000)
+  }
+
+  return buf.toString('utf8').slice(0, 8000)
 }
 
 export async function fetchUrlText(url) {
