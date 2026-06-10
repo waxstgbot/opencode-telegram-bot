@@ -1,0 +1,17 @@
+[Unit]
+Description=Opencode Telegram Bot Tunnel
+After=network.target
+
+[Service]
+Type=simple
+User=%i
+Environment=OPENCODE_PORT=4096
+Environment=BOT_URL=https://opencode-bot.onrender.com
+Environment=REGISTER_SECRET=change-this-random-string
+Environment=OPENCODE_PASSWORD=
+ExecStart=/path/to/computer/start.sh
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
