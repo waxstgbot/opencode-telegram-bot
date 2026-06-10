@@ -66,13 +66,36 @@ export async function fetchUrlText(url) {
 }
 
 export async function webSearch(query) {
-  const url = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&srlimit=5`
-  const res = await fetch(url, { timeout: 10000 })
-  if (!res.ok) throw new Error(`Search ${res.status}`)
-  const data = await res.json()
-  const results = data?.query?.search || []
-  if (results.length === 0) return null
-  return results.slice(0, 3).map(r =>
-    `• ${r.title}: ${r.snippet.replace(/<[^>]+>/g, '').slice(0, 300)}`
-  ).join('\n\n')
+  const parts = []
+
+  try {
+    const ddgUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`
+    const ddgRes = await fetch(ddgUrl, { timeout: 5000 })
+    if (ddgRes.ok) {
+      const ddgData = await ddgRes.json()
+      if (ddgData.AbstractText) parts.push(ddgData.AbstractText)
+      if (ddgData.RelatedTopics) {
+        ddgData.RelatedTopics.slice(0, 5).forEach(t => {
+          if (t.Text) parts.push(t.Text)
+          if (t.Topics) t.Topics.forEach(st => { if (st.Text) parts.push(st.Text) })
+        })
+      }
+    }
+  } catch {}
+
+  if (parts.length === 0) {
+    try {
+      const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&srlimit=5`
+      const wikiRes = await fetch(wikiUrl, { timeout: 5000 })
+      if (wikiRes.ok) {
+        const wikiData = await wikiRes.json()
+        const results = wikiData?.query?.search || []
+        results.slice(0, 3).forEach(r => {
+          parts.push(`• ${r.title}: ${r.snippet.replace(/<[^>]+>/g, '').slice(0, 300)}`)
+        })
+      }
+    } catch {}
+  }
+
+  return parts.length > 0 ? parts.slice(0, 5).join('\n\n') : null
 }

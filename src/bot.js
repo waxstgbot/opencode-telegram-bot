@@ -159,13 +159,13 @@ export function createBot(token, goApiKey) {
   })
 
   bot.hears('⚡ Agent', async (ctx) => {
-    store.taskMode = 'chat'
+    store.taskMode = 'agent'
     store.resetUserPrompt(ctx.from.id)
     await ctx.reply(
-      '⚡ *Agent* — AI shaxsiyatini ozgartirish\n\n'
-      + '/agent <matn> — yangi system prompt yozish\n'
-      + 'Misol: /agent Sen sarkastik AI, kinoyali gapir\n'
-      + 'Misol: /agent Sen psixolog, muloyim maslahat ber\n\n'
+      '⚡ *Agent* | Super AI Agent\n\n'
+      + 'Inson darajasidagi dasturchi. Istalgan kodni yozadi.\n'
+      + 'Hech qanday cheklov, senzura yo\'q.\n\n'
+      + '/agent <matn> — shaxsiy system prompt yozish\n'
       + '/reset_agent — default ga qaytish',
       { ...mainKb, parse_mode: 'Markdown' }
     )
@@ -200,7 +200,7 @@ export function createBot(token, goApiKey) {
       + '🖼 *Vision* — MiMo V2.5 (rasm tahlil)\n'
       + '📚 *Long* — Qwen3.6 Plus (katta kontekst)\n'
       + '🌤 *Weather* — ob-havo (location/shar)\n'
-      + '⚡ *Agent* — AI shaxsiyatini ozgartirish\n'
+      + '⚡ *Agent* — Super AI Agent (kod + har qanday vazifa)\n'
       + '📊 *Status* — bot holati\n'
       + '🗑 *Clear* — tarixni tozalash\n\n'
       + '🔗 URL yuboring → bot o\'qib beradi\n'
@@ -213,7 +213,7 @@ export function createBot(token, goApiKey) {
     const text = ctx.payload.trim()
     if (!text) return ctx.reply('/agent <matn>', mainKb)
     store.setUserPrompt(ctx.from.id, text)
-    store.taskMode = 'chat'
+    store.taskMode = 'agent'
     await ctx.reply(`✅ Agent ornatildi:\n\n${text}`, mainKb)
   })
 
@@ -293,7 +293,7 @@ export function createBot(token, goApiKey) {
         w = await fetchWeather(text)
         store.setUserLocation(ctx.from.id, { lat: 0, lon: 0, name: text })
         await ctx.reply(`🌤 *${text}*\n\n${w}`, { ...mainKb, parse_mode: 'Markdown' })
-      } catch (e) {
+      } catch {
         await ctx.reply(`❌ Ob-havo olinmadi. Shahar nomini to'g'ri yozing yoki location yuboring.`, mainKb)
       }
       return
