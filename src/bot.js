@@ -67,6 +67,7 @@ export function createBot(token, goApiKey, opencodePassword) {
 
   async function processChat(ctx, text, imageUrl) {
     const model = store.getModelName()
+    const mode = store.taskMode
     const systemPrompt = store.getSystemPrompt(ctx.from.id)
     const history = store.getUserHistory(ctx.from.id)
     const urls = text.match(URL_REGEX)
@@ -89,8 +90,11 @@ export function createBot(token, goApiKey, opencodePassword) {
         return
       }
 
+      const today = new Date().toISOString().split('T')[0]
+      let contextMsg = `Bugungi sana: ${today}. Javob berishda faqat web qidiruv natijalarini ishlat, o\'z bilimingni ishlatma.`
+
       if (urls && urls.length > 0) {
-        extraContext = 'Web sahifa kontenti:\n'
+        extraContext = 'Web sahifa kontenti (ASOSIY MANBA):\n'
         for (const url of urls.slice(0, 2)) {
           try {
             const content = await fetchUrlText(url)
@@ -103,19 +107,22 @@ export function createBot(token, goApiKey, opencodePassword) {
         try {
           const searchResults = await webSearch(text)
           if (searchResults) {
-            extraContext = 'Web qidiruv natijalari:\n' + searchResults
+            extraContext = 'Web qidiruv natijalari (ASOSIY MANBA — shu ma\'lumotlarni ishlat, o\'z bilimingni emas):\n' + searchResults
           }
         } catch {}
       }
 
       const messages = [{ role: 'system', content: systemPrompt }]
       if (extraContext) {
-        messages.push({ role: 'system', content: extraContext })
+        messages.push({ role: 'system', content: contextMsg + '\n\n' + extraContext })
+      } else {
+        messages.push({ role: 'system', content: contextMsg })
       }
       messages.push(...history.filter(m => typeof m.content === 'string'))
       messages.push({ role: 'user', content: text })
 
-      const reply = await zenChat(model, messages, { temperature: 0.9 })
+      const temp = mode === 'agent' ? 0.5 : 0.9
+      const reply = await zenChat(model, messages, { temperature: temp })
 
       store.addUserMessage(ctx.from.id, 'user', text)
       store.addUserMessage(ctx.from.id, 'assistant', reply)
@@ -145,6 +152,7 @@ export function createBot(token, goApiKey, opencodePassword) {
   bot.hears('💬 Chat', async (ctx) => {
     store.taskMode = 'chat'
     store.resetUserPrompt(ctx.from.id)
+    store.clearUserHistory(ctx.from.id)
     await ctx.reply('🧠 *Chat* | Nemotron 3 Ultra\n\n'
       + 'URL yuboring → o\'qib beradi\n'
       + 'Matn yozing → AI + web qidiruv',
@@ -155,24 +163,28 @@ export function createBot(token, goApiKey, opencodePassword) {
   bot.hears('💻 Code', async (ctx) => {
     store.taskMode = 'code'
     store.resetUserPrompt(ctx.from.id)
+    store.clearUserHistory(ctx.from.id)
     await ctx.reply('🧠 *Code* | North Mini Code Free\n\nKod yozish rejimi', { ...mainKb, parse_mode: 'Markdown' })
   })
 
   bot.hears('🖼 Vision', async (ctx) => {
     store.taskMode = 'vision'
     store.resetUserPrompt(ctx.from.id)
+    store.clearUserHistory(ctx.from.id)
     await ctx.reply('🧠 *Vision* | MiMo-V2.5 Free\n\nRasm yuboring, men tahlil qilaman', { ...mainKb, parse_mode: 'Markdown' })
   })
 
   bot.hears('📚 Long', async (ctx) => {
     store.taskMode = 'long'
     store.resetUserPrompt(ctx.from.id)
+    store.clearUserHistory(ctx.from.id)
     await ctx.reply('🧠 *Long* | Qwen3.6 Plus Free\n\nKatta kontekst rejimi', { ...mainKb, parse_mode: 'Markdown' })
   })
 
   bot.hears('🌤 Weather', async (ctx) => {
     store.taskMode = 'weather'
     store.resetUserPrompt(ctx.from.id)
+    store.clearUserHistory(ctx.from.id)
     const loc = store.getUserLocation(ctx.from.id)
     if (loc) {
       try {
@@ -189,6 +201,7 @@ export function createBot(token, goApiKey, opencodePassword) {
   bot.hears('⚡ Agent', async (ctx) => {
     store.taskMode = 'agent'
     store.resetUserPrompt(ctx.from.id)
+    store.clearUserHistory(ctx.from.id)
     await ctx.reply(
       '⚡ Agent | Super AI Agent\n\n'
       + 'Istalgan soha boyicha eng yuqori darajadagi mutaxassis.\n'
