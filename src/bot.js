@@ -132,15 +132,12 @@ export function createBot(token, goApiKey, opencodePassword) {
     updateKb()
     const info = store.getModelInfo()
     await ctx.reply(
-      '╔══════════════════════╗\n'
-      + '║     🤖 WILD AI Bot   ║\n'
-      + '╚══════════════════════╝\n\n'
-      + `🧠 ${info.label}\n`
-      + `📡 ${store.mode === 'online' ? '💻 Komp rejimi' : '📱 Telefon AI rejimi'}\n\n`
-      + 'Tugmalardan foydalaning 👇\n'
-      + 'URL yuboring → bot o\'qib beradi\n'
-      + 'Oddiy matn → AI + web qidiruv\n'
-      + 'Ob-havo avtomatik: 08:00 va 13:00',
+      '🤖 WILD AI\n\n'
+      + `🧠 ${info.label} · ${store.mode === 'online' ? '💻 Komp rejimi' : '📱 Telefon AI rejimi'}\n\n`
+      + 'Tugmalardan foydalaning:\n'
+      + '• URL yuboring → bot o\'qiydi\n'
+      + '• Oddiy matn → AI + web qidiruv\n'
+      + '• Ob-havo avtomatik: 08:00 / 13:00',
       mainKb
     )
   })
