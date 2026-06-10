@@ -49,7 +49,7 @@ const MODEL_MAP = {
   vision: { id: 'mimo-v2.5-free', label: 'MiMo-V2.5 Free' },
   long: { id: 'qwen3.6-plus-free', label: 'Qwen3.6 Plus Free' },
   weather: { id: 'nemotron-3-ultra-free', label: 'Nemotron 3 Ultra Free' },
-  agent: { id: 'north-mini-code-free', label: 'Agent (Unfiltered)' },
+  agent: { id: 'opencode/big-pickle', label: 'Agent Big Pickle' },
 }
 
 export const store = {
