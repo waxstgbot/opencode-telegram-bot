@@ -2,6 +2,7 @@ import 'dotenv/config'
 import express from 'express'
 import { createBot } from './bot.js'
 import { store } from './store.js'
+import { fetchWeatherByCoords } from './client.js'
 
 const PORT = process.env.PORT || 3000
 const botToken = process.env.BOT_TOKEN
@@ -38,7 +39,6 @@ function startWeatherCron(botInstance) {
       for (const uid of userIds) {
         const loc = store.userLocations[uid]
         try {
-          const { fetchWeatherByCoords } = await import('./client.js')
           const w = await fetchWeatherByCoords(loc.lat, loc.lon)
           await botInstance.telegram.sendMessage(Number(uid),
             `🌤 *${timeKey} ${loc.name || 'Ob-havo'}*\n${w}`,

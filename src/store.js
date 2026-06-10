@@ -127,6 +127,4 @@ export const store = {
     save()
   },
 
-  getSystemPrompts() { return SYSTEM_PROMPTS },
-  getModelMap() { return MODEL_MAP },
 }

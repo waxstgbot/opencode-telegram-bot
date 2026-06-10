@@ -24,6 +24,7 @@ const onlineKb = Markup.keyboard([
 let mainKb = offlineKb
 
 const URL_REGEX = /https?:\/\/[^\s]+/g
+const MAX_MSG = 4000
 
 function formatDate(ts) {
   if (!ts) return '—'
@@ -79,7 +80,7 @@ export function createBot(token, goApiKey, opencodePassword) {
           ]},
         ]
         const reply = await zenChat(model, messages, { temperature: 0.9 })
-        await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, reply || '✅')
+        await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, (reply || '✅').slice(0, MAX_MSG))
         return
       }
 
@@ -114,9 +115,11 @@ export function createBot(token, goApiKey, opencodePassword) {
       store.addUserMessage(ctx.from.id, 'user', text)
       store.addUserMessage(ctx.from.id, 'assistant', reply)
 
-      await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, reply || '✅')
+      const replyText = (reply || '✅').slice(0, MAX_MSG)
+      await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, replyText)
     } catch (e) {
-      await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, `❌ ${e.message}`)
+      const errMsg = `❌ ${e.message}`.slice(0, MAX_MSG)
+      await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, errMsg).catch(() => {})
     }
   }
 
@@ -296,11 +299,10 @@ export function createBot(token, goApiKey, opencodePassword) {
       let shellId = sessions?.find(s => s.title === '__telegram-shell__')?.id
       if (!shellId) shellId = (await client.createSession('__telegram-shell__')).id
       const output = await client.runShell(shellId, shellCmd)
-      const maxLen = 4000
-      const text = `▶️ *${language}*\n\`\`\`${language}\n${code.slice(0, 500)}\n\`\`\`\n\n📤 *Natija:*\n\`\`\`\n${(output || '✅').slice(0, maxLen)}\n\`\`\``
+      const text = `▶️ *${language}*\n\`\`\`${language}\n${code.slice(0, 500)}\n\`\`\`\n\n📤 *Natija:*\n\`\`\`\n${(output || '✅').slice(0, 3000)}\n\`\`\``.slice(0, MAX_MSG)
       await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, text, { parse_mode: 'Markdown' })
     } catch (e) {
-      await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, `❌ ${e.message}`)
+      await ctx.telegram.editMessageText(ctx.chat.id, statusMsg.message_id, undefined, `❌ ${e.message}`.slice(0, MAX_MSG)).catch(() => {})
     }
   })
 
