@@ -40,7 +40,7 @@ function auth(ctx, next) {
 }
 
 export function createBot(token, goApiKey, opencodePassword) {
-  const bot = new Telegraf(token)
+  const bot = new Telegraf(token, { handlerTimeout: 300_000 })
   bot.use(auth)
 
   bot.catch((err, ctx) => {
