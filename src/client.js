@@ -223,11 +223,39 @@ export async function fetchUrlText(url) {
 }
 
 export async function webSearch(query) {
+  const searchxKey = process.env.SEARCHX_API_KEY
   const parts = []
 
-  const ddgHtmlPromise = (async () => {
+  if (searchxKey) {
     try {
-      const res = await ft(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`, 8000)
+      const res = await fetch(
+        `https://searchx.dev/api/v1/search?q=${encodeURIComponent(query)}&mode=hybrid`,
+        {
+          headers: { 'Authorization': `Bearer ${searchxKey}` },
+          signal: AbortSignal.timeout(8000),
+        }
+      )
+      if (res.ok) {
+        const data = await res.json()
+        const results = data?.results || []
+        results.slice(0, 6).forEach(r => {
+          if (r.title && r.url) {
+            parts.push(`• ${r.title}\n  ${r.url}\n  ${(r.snippet || '').slice(0, 300)}`)
+          }
+        })
+        if (parts.length > 0) {
+          console.log(`🌐 SearchX OK: ${parts.length} results for "${query.slice(0, 50)}"`)
+          return parts.join('\n\n')
+        }
+      }
+    } catch (e) {
+      console.log(`🌐 SearchX fail: ${e.message}`)
+    }
+  }
+
+  const ddgPromise = (async () => {
+    try {
+      const res = await ft(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`, 6000)
       const html = await res.text()
       const results = [...html.matchAll(/<a rel="nofollow" class="result__a" href="([^"]+)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<a class="result__snippet"[\s\S]*?>([\s\S]*?)<\/a>/g)]
       results.slice(0, 5).forEach(m => {
@@ -241,16 +269,12 @@ export async function webSearch(query) {
 
   const wikiEnPromise = (async () => {
     try {
-      const res = await ft(
-        `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&srlimit=3`,
-        5000
-      )
+      const res = await ft(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&srlimit=3`, 5000)
       if (res.ok) {
         const data = await res.json()
         const results = data?.query?.search || []
         results.forEach(r => {
-          const url = `https://en.wikipedia.org/wiki/${encodeURIComponent(r.title.replace(/ /g, '_'))}`
-          parts.push(`• ${r.title}\n  ${url}\n  ${r.snippet.replace(/<[^>]+>/g, '').slice(0, 200)}`)
+          parts.push(`• ${r.title}\n  https://en.wikipedia.org/wiki/${encodeURIComponent(r.title.replace(/ /g, '_'))}\n  ${r.snippet.replace(/<[^>]+>/g, '').slice(0, 200)}`)
         })
       }
     } catch {}
@@ -258,28 +282,23 @@ export async function webSearch(query) {
 
   const wikiUzPromise = (async () => {
     try {
-      const res = await ft(
-        `https://uz.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&srlimit=3`,
-        5000
-      )
+      const res = await ft(`https://uz.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&srlimit=3`, 5000)
       if (res.ok) {
         const data = await res.json()
         const results = data?.query?.search || []
         results.forEach(r => {
-          const url = `https://uz.wikipedia.org/wiki/${encodeURIComponent(r.title.replace(/ /g, '_'))}`
-          parts.push(`• ${r.title}\n  ${url}\n  ${r.snippet.replace(/<[^>]+>/g, '').slice(0, 200)}`)
+          parts.push(`• ${r.title}\n  https://uz.wikipedia.org/wiki/${encodeURIComponent(r.title.replace(/ /g, '_'))}\n  ${r.snippet.replace(/<[^>]+>/g, '').slice(0, 200)}`)
         })
       }
     } catch {}
   })()
 
-  await Promise.all([ddgHtmlPromise, wikiEnPromise, wikiUzPromise])
+  await Promise.all([ddgPromise, wikiEnPromise, wikiUzPromise])
 
   if (parts.length > 0) {
-    const result = parts.slice(0, 6).join('\n\n')
-    console.log(`🌐 Web search OK: ${parts.length} results for "${query.slice(0, 50)}"`)
-    return result
+    console.log(`🌐 DDG+Wiki OK: ${parts.length} results for "${query.slice(0, 50)}"`)
+    return parts.slice(0, 6).join('\n\n')
   }
-  console.log(`🌐 Web search empty: no results for "${query.slice(0, 50)}"`)
+  console.log(`🌐 No results for "${query.slice(0, 50)}"`)
   return null
 }

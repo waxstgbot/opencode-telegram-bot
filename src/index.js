@@ -15,6 +15,7 @@ const GO_API_KEY_FALLBACK = 'sk-9hRaZ8Qb2wGn7iTGuS0LHThjBSy6TMJFQWLZVsTElz7vX9mL
 const goApiKey = process.env.OPENCODE_GO_KEY || GO_API_KEY_FALLBACK
 const groqApiKey = process.env.GROQ_API_KEY || ''
 const deepSeekApiKey = process.env.DEEPSEEK_API_KEY || ''
+const searchxKey = process.env.SEARCHX_API_KEY || ''
 
 if (!botToken) {
   console.error('BOT_TOKEN env variable required')
@@ -24,6 +25,7 @@ if (!botToken) {
 console.log(`🔑 Zen API: ${goApiKey ? 'loaded' : 'missing'}`)
 console.log(`🔑 Groq API: ${groqApiKey ? 'loaded (' + groqApiKey.slice(0, 10) + '...)' : 'missing'}`)
 console.log(`🔑 DeepSeek API: ${deepSeekApiKey ? 'loaded (' + deepSeekApiKey.slice(0, 10) + '...)' : 'missing'}`)
+console.log(`🔍 SearchX API: ${searchxKey ? 'loaded (' + searchxKey.slice(0, 10) + '...)' : 'missing'}`)
 
 const bot = createBot(botToken, goApiKey, groqApiKey, deepSeekApiKey, opencodePassword)
 
