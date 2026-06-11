@@ -105,6 +105,40 @@ export function createGroqClient(apiKey) {
   }
 }
 
+export function createDeepSeekClient(apiKey) {
+  const BASE = 'https://api.deepseek.com'
+
+  return {
+    async chat(model, messages, options = {}) {
+      const body = {
+        model,
+        messages,
+        stream: false,
+        max_tokens: options.maxTokens || 1024,
+      }
+      if (options.temperature !== undefined) body.temperature = options.temperature
+
+      const res = await fetch(`${BASE}/v1/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(120000),
+      })
+      if (!res.ok) {
+        const text = await res.text().catch(() => '')
+        const err = new Error(`DeepSeek API ${res.status}: ${text.slice(0, 300)}`)
+        err.status = res.status
+        throw err
+      }
+      const data = await res.json()
+      return data.choices?.[0]?.message?.content || ''
+    },
+  }
+}
+
 async function ft(url, ms = 10000) {
   const res = await fetch(url, { signal: AbortSignal.timeout(ms) })
   if (!res.ok) throw new Error(`HTTP ${res.status}`)

@@ -44,12 +44,12 @@ const SYSTEM_PROMPTS = {
 }
 
 const MODEL_MAP = {
-  chat: { id: 'nemotron-3-ultra-free', label: 'Nemotron 3 Ultra Free' },
+  chat: { id: 'deepseek-v4-flash', label: 'DeepSeek V4 Flash' },
   code: { id: 'north-mini-code-free', label: 'North Mini Code Free' },
   vision: { id: 'mimo-v2.5-free', label: 'MiMo-V2.5 Free' },
-  long: { id: 'qwen3.6-plus-free', label: 'Qwen3.6 Plus Free' },
+  long: { id: 'deepseek-v4-flash', label: 'DeepSeek V4 Flash' },
   weather: { id: 'nemotron-3-ultra-free', label: 'Nemotron 3 Ultra Free' },
-  agent: { id: 'nemotron-3-ultra-free', label: 'Agent Nemotron Ultra' },
+  agent: { id: 'deepseek-v4-flash', label: 'DeepSeek V4 Flash' },
 }
 
 export const store = {

@@ -1,5 +1,5 @@
 import { Telegraf, Markup } from 'telegraf'
-import { createClient, createGoClient, createGroqClient, fetchWeather, fetchWeatherByCoords, fetchUrlText, fetchDocumentText, webSearch, detectPlatform, downloadFromPlatform } from './client.js'
+import { createClient, createGoClient, createGroqClient, createDeepSeekClient, fetchWeather, fetchWeatherByCoords, fetchUrlText, fetchDocumentText, webSearch, detectPlatform, downloadFromPlatform } from './client.js'
 import { store } from './store.js'
 
 const ALLOWED_USERS_RAW = process.env.ALLOWED_USERS || '5461818003,1133984065'
@@ -39,7 +39,7 @@ function auth(ctx, next) {
   return next()
 }
 
-export function createBot(token, goApiKey, groqApiKey, opencodePassword) {
+export function createBot(token, goApiKey, groqApiKey, deepSeekApiKey, opencodePassword) {
   const bot = new Telegraf(token, { handlerTimeout: 300_000 })
   bot.use(auth)
 
@@ -50,6 +50,7 @@ export function createBot(token, goApiKey, groqApiKey, opencodePassword) {
 
   const goClient = createGoClient(goApiKey)
   const groqClient = groqApiKey ? createGroqClient(groqApiKey) : null
+  const deepSeekClient = deepSeekApiKey ? createDeepSeekClient(deepSeekApiKey) : null
 
   function getTunnelClient() {
     const url = store.tunnelUrl
@@ -66,6 +67,7 @@ export function createBot(token, goApiKey, groqApiKey, opencodePassword) {
     const errs = []
     const groqFast = 'llama-3.3-70b-versatile'
     const groqFallback = 'llama-3.1-8b-instant'
+    const deepSeekModel = 'deepseek-v4-flash'
 
     if (groqClient && !skipGroq) {
       for (const gm of [groqFast, groqFallback]) {
@@ -79,6 +81,18 @@ export function createBot(token, goApiKey, groqApiKey, opencodePassword) {
           console.error(`❌ Groq fail ${gm}: ${e.message}`)
           if (e.status !== 429) break
         }
+      }
+    }
+
+    if (deepSeekClient) {
+      try {
+        console.log(`🚀 DeepSeek trying: ${deepSeekModel}`)
+        const r = await deepSeekClient.chat(deepSeekModel, messages, opts)
+        console.log(`✅ DeepSeek OK`)
+        return r
+      } catch (e) {
+        errs.push(`DeepSeek: ${e.message}`)
+        console.error(`❌ DeepSeek fail: ${e.message}`)
       }
     }
 
