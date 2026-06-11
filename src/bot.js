@@ -155,18 +155,18 @@ export function createBot(token, goApiKey, groqApiKey, deepSeekApiKey, opencodeP
       }
 
       const messages = [{ role: 'system', content: systemPrompt }]
-      if (!hasCustom) {
-        if (extraContext && !docText) {
-          messages.push({ role: 'system', content: `Bugungi sana: ${today}.` + '\n\n' + extraContext })
-        } else if (!docText) {
-          messages.push({ role: 'system', content: `Bugungi sana: ${today}.` })
-        }
+      if (!hasCustom && !docText) {
+        messages.push({ role: 'system', content: `Bugungi sana: ${today}.` })
       }
       messages.push(...history.filter(m => typeof m.content === 'string'))
 
+      const searchPrefix = (extraContext && !docText)
+        ? `Web qidiruv natijalari — MAJBURIY ISHLAT:\n${extraContext}\n\n---\n\n`
+        : ''
+
       const userContent = docText
         ? `[HUJJAT KONTENTI]\n${docText}\n\n[FOYDALANUVCHI SAVOLI]\n${text}`
-        : text
+        : searchPrefix + text
       messages.push({ role: 'user', content: userContent })
 
       const temp = mode === 'agent' ? 0.7 : 0.9
