@@ -3,7 +3,7 @@ import express from 'express'
 import { execSync } from 'child_process'
 import { createBot } from './bot.js'
 import { store } from './store.js'
-import { fetchWeatherByCoords } from './client.js'
+import { fetchWeather, fetchWeatherByCoords } from './client.js'
 
 const PORT = process.env.PORT || 3000
 let GIT_HASH = ''
@@ -50,7 +50,9 @@ function startWeatherCron(botInstance) {
       for (const uid of userIds) {
         const loc = store.userLocations[uid]
         try {
-          const w = await fetchWeatherByCoords(loc.lat, loc.lon)
+          const w = loc.lat || loc.lon
+            ? await fetchWeatherByCoords(loc.lat, loc.lon)
+            : await fetchWeather(loc.name)
           await botInstance.telegram.sendMessage(Number(uid),
             `${timeKey} ${loc.name || 'Ob-havo'}\n${w}`)
         } catch (e) {
