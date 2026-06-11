@@ -193,7 +193,7 @@ export async function webSearch(query) {
 
   const tryFetch = async (url, parser) => {
     try {
-      const res = await ft(url, 3000)
+      const res = await ft(url, 5000)
       if (res.ok) parser(await res.json())
     } catch {}
   }
@@ -211,7 +211,7 @@ export async function webSearch(query) {
     }
   )
 
-  const wikiPromise = tryFetch(
+  const wikiEnPromise = tryFetch(
     `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&srlimit=3`,
     (data) => {
       const results = data?.query?.search || []
@@ -221,7 +221,17 @@ export async function webSearch(query) {
     }
   )
 
-  await Promise.all([ddgPromise, wikiPromise])
+  const wikiUzPromise = tryFetch(
+    `https://uz.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&srlimit=3`,
+    (data) => {
+      const results = data?.query?.search || []
+      results.forEach(r => {
+        parts.push(`• ${r.title}: ${r.snippet.replace(/<[^>]+>/g, '').slice(0, 200)}`)
+      })
+    }
+  )
+
+  await Promise.all([ddgPromise, wikiEnPromise, wikiUzPromise])
 
   return parts.length > 0 ? parts.slice(0, 4).join('\n\n') : null
 }

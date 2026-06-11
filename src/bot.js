@@ -144,19 +144,17 @@ export function createBot(token, goApiKey, groqApiKey, opencodePassword) {
         if (extraContext && !docText) {
           messages.push({ role: 'system', content: `Bugungi sana: ${today}.` + '\n\n' + extraContext })
         } else if (!docText) {
-          messages.push({ role: 'system', content: `Bugungi sana: ${today}. Javob berishda faqat web qidiruv natijalarini ishlat, o'z bilimingni ishlatma.` })
+          messages.push({ role: 'system', content: `Bugungi sana: ${today}.` })
         }
       }
       messages.push(...history.filter(m => typeof m.content === 'string'))
 
       const userContent = docText
         ? `[HUJJAT KONTENTI]\n${docText}\n\n[FOYDALANUVCHI SAVOLI]\n${text}`
-        : (mode === 'agent' && !hasCustom
-          ? 'Mavzu: kino va aktyorlik, shaxsiy hayot, fan va texnologiya, san\'at va madaniyat, sport va biznes.\n\nFoydalanuvchi: ' + text
-          : text)
+        : text
       messages.push({ role: 'user', content: userContent })
 
-      const temp = mode === 'agent' ? 0.5 : 0.9
+      const temp = mode === 'agent' ? 0.7 : 0.9
       const reply = await chatWithFallback(model, messages, { temperature: temp })
 
       store.addUserMessage(ctx.from.id, 'user', text)
@@ -191,7 +189,7 @@ export function createBot(token, goApiKey, groqApiKey, opencodePassword) {
     store.taskMode = 'chat'
     store.resetUserPrompt(ctx.from.id)
     store.clearUserHistory(ctx.from.id)
-    await ctx.reply('Chat | Nemotron 3 Ultra\n\n'
+    await ctx.reply('💬 Chat — suhbat, savol-javob, web qidiruv, fayl tahlil\n'
       + 'Pinterest linki -> rasm yuklab beradi\n'
       + 'URL yuboring -> oqib beradi\n'
       + 'Matn yozing -> AI + web qidiruv',
