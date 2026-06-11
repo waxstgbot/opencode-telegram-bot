@@ -149,6 +149,7 @@ export function createBot(token, goApiKey, groqApiKey, deepSeekApiKey, opencodeP
           const searchResults = await webSearch(text)
           if (searchResults) {
             extraContext = 'Web qidiruv natijalari (ASOSIY MANBA — shu ma\'lumotlarni ishlat, o\'z bilimingni emas):\n' + searchResults
+            console.log(`🌐 For user "${text.slice(0, 40)}..." using web results: ${searchResults.slice(0, 100)}...`)
           }
         } catch {}
       }

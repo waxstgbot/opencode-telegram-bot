@@ -225,47 +225,61 @@ export async function fetchUrlText(url) {
 export async function webSearch(query) {
   const parts = []
 
-  const tryFetch = async (url, parser) => {
+  const ddgHtmlPromise = (async () => {
     try {
-      const res = await ft(url, 5000)
-      if (res.ok) parser(await res.json())
+      const res = await ft(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`, 8000)
+      const html = await res.text()
+      const results = [...html.matchAll(/<a rel="nofollow" class="result__a" href="([^"]+)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<a class="result__snippet"[\s\S]*?>([\s\S]*?)<\/a>/g)]
+      results.slice(0, 5).forEach(m => {
+        const url = decodeURIComponent(m[1].replace(/^.*uddg=/, '').split('&')[0])
+        const title = m[2].replace(/<[^>]+>/g, '').trim()
+        const snippet = m[3].replace(/<[^>]+>/g, '').trim()
+        if (title) parts.push(`• ${title}\n  ${url}\n  ${snippet.slice(0, 200)}`)
+      })
     } catch {}
-  }
+  })()
 
-  const ddgPromise = tryFetch(
-    `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`,
-    (data) => {
-      if (data.AbstractText) parts.push(data.AbstractText)
-      if (data.RelatedTopics) {
-        data.RelatedTopics.slice(0, 5).forEach(t => {
-          if (t.Text) parts.push(t.Text)
-          if (t.Topics) t.Topics.forEach(st => { if (st.Text) parts.push(st.Text) })
+  const wikiEnPromise = (async () => {
+    try {
+      const res = await ft(
+        `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&srlimit=3`,
+        5000
+      )
+      if (res.ok) {
+        const data = await res.json()
+        const results = data?.query?.search || []
+        results.forEach(r => {
+          const url = `https://en.wikipedia.org/wiki/${encodeURIComponent(r.title.replace(/ /g, '_'))}`
+          parts.push(`• ${r.title}\n  ${url}\n  ${r.snippet.replace(/<[^>]+>/g, '').slice(0, 200)}`)
         })
       }
-    }
-  )
+    } catch {}
+  })()
 
-  const wikiEnPromise = tryFetch(
-    `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&srlimit=3`,
-    (data) => {
-      const results = data?.query?.search || []
-      results.forEach(r => {
-        parts.push(`• ${r.title}: ${r.snippet.replace(/<[^>]+>/g, '').slice(0, 200)}`)
-      })
-    }
-  )
+  const wikiUzPromise = (async () => {
+    try {
+      const res = await ft(
+        `https://uz.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&srlimit=3`,
+        5000
+      )
+      if (res.ok) {
+        const data = await res.json()
+        const results = data?.query?.search || []
+        results.forEach(r => {
+          const url = `https://uz.wikipedia.org/wiki/${encodeURIComponent(r.title.replace(/ /g, '_'))}`
+          parts.push(`• ${r.title}\n  ${url}\n  ${r.snippet.replace(/<[^>]+>/g, '').slice(0, 200)}`)
+        })
+      }
+    } catch {}
+  })()
 
-  const wikiUzPromise = tryFetch(
-    `https://uz.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&srlimit=3`,
-    (data) => {
-      const results = data?.query?.search || []
-      results.forEach(r => {
-        parts.push(`• ${r.title}: ${r.snippet.replace(/<[^>]+>/g, '').slice(0, 200)}`)
-      })
-    }
-  )
+  await Promise.all([ddgHtmlPromise, wikiEnPromise, wikiUzPromise])
 
-  await Promise.all([ddgPromise, wikiEnPromise, wikiUzPromise])
-
-  return parts.length > 0 ? parts.slice(0, 4).join('\n\n') : null
+  if (parts.length > 0) {
+    const result = parts.slice(0, 6).join('\n\n')
+    console.log(`🌐 Web search OK: ${parts.length} results for "${query.slice(0, 50)}"`)
+    return result
+  }
+  console.log(`🌐 Web search empty: no results for "${query.slice(0, 50)}"`)
+  return null
 }
